@@ -17,9 +17,11 @@ export interface QuotaWindow {
 export interface QuotaSnapshot {
   planId: string;
   fetchedAt: number;
-  source: 'remote';
+  source: 'remote' | 'unsupported';
   windows: QuotaWindow[];
 }
+
+export type QuotaSnapshotWithStatus = QuotaSnapshot | { planId: string; fetchedAt: number; source: 'unsupported'; windows: never[] };
 
 export interface PlanModel {
   id: string;
@@ -33,6 +35,8 @@ export interface PlanModel {
   supportsVision?: boolean;
   supportsWebSearch?: boolean;
   features?: string[];
+  /** 供应商侧标识该模型属于免费档位（仅作为前端提示，BYOK 不会主动改写请求）。 */
+  free?: boolean;
 }
 
 export interface PlanConfig {
@@ -73,12 +77,31 @@ export interface UsageSummary {
   failures: number;
 }
 
+export interface ModelSeriesPoint {
+  timestamp: number;
+  requests: number;
+  tokens: number;
+}
+
+export interface ModelSeries {
+  id: string;
+  planId: string;
+  modelId: string;
+  name: string;
+  provider: string;
+  total: number;
+  totalTokens: number;
+  points: ModelSeriesPoint[];
+  windowStart: number;
+  windowEnd: number;
+  bucketHours: number;
+}
+
 export interface DashboardSettings {
   statusBarUsage: StatusBarUsageMode;
   statusBarPlanId?: string;
   /** 仅显示已启用、已选择模型且已配置 API Key 的 Plan */
   filterAvailable?: boolean;
   dashboardTheme?: 'system' | 'dark' | 'light';
-  dashboardStyle?: 'glass' | 'cyber';
   language?: 'zh-CN' | 'en';
 }

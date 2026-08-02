@@ -46,8 +46,7 @@ export function activate(context: vscode.ExtensionContext): void {
     status.show();
   };
 
-  const onSettingsChanged = (): void => {
-    provider.refresh();
+  const onStoreChanged = (): void => {
     updateStatus();
   };
 
@@ -78,7 +77,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
   context.subscriptions.push(
     status,
-    store.onDidChange(onSettingsChanged),
+    store.onDidChange(onStoreChanged),
     vscode.commands.registerCommand('byokCopilot.openDashboard', () => dashboard.open()),
     vscode.lm.registerLanguageModelChatProvider('byok-copilot', provider),
   );

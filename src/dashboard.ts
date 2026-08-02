@@ -178,6 +178,7 @@ export class Dashboard {
       }
       if (message.type === 'saveSettings') {
         await this.store.setSettings(message.settings);
+        this.provider.refresh();
         this.sync();
       }
       if (message.type === 'exportConfig') {

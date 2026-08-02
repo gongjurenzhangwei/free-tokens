@@ -774,6 +774,20 @@ export function dashboardView(webview: vscode.Webview, version: string): string 
     .custom-model-form .compact input { width: 100%; min-height: 34px; }
     .custom-model-form .custom-add { white-space: nowrap; min-height: 34px; align-self: end; }
     .custom-model-form .custom-error { grid-column: 1 / -1; color: var(--magenta); font: 500 10px var(--mono); letter-spacing: 0.06em; min-height: 14px; }
+    .custom-model-form .toggle-group {
+      grid-column: 1 / -1;
+      display: flex;
+      flex-direction: row;
+      flex-wrap: nowrap;
+      gap: 8px;
+      align-items: stretch;
+    }
+    .custom-model-form .toggle-group .toggle-row {
+      flex: 1 1 0;
+      min-width: 0;
+      justify-content: center;
+      padding: 6px 8px;
+    }
 
     .custom-list {
       display: flex;
@@ -1299,7 +1313,7 @@ export function dashboardView(webview: vscode.Webview, version: string): string 
           </div>
           <button type="button" class="button custom-add" id="addCustomModel">添加模型</button>
           <div class="custom-error" id="customModelError" role="alert" aria-live="polite"></div>
-          <div class="compact" style="grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 12px;">
+          <div class="compact toggle-group">
             <label class="toggle-row" style="font-size:11px;letter-spacing:0.08em;text-transform:none;color:var(--muted)">
               <input type="checkbox" id="customModelVision" checked>
               <span>支持视觉</span>

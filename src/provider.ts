@@ -2,6 +2,26 @@ import * as vscode from 'vscode';
 import { sendChat } from './api';
 import { PlanStore } from './store';
 
+function isLikelyNvidiaFunctionId(id: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+}
+
+function isNvidiaNim(baseUrl: string): boolean {
+  try { return new URL(baseUrl).host.toLowerCase().includes('integrate.api.nvidia.com'); } catch { return false; }
+}
+
+function isInvalidModelId(baseUrl: string, modelId: string): boolean {
+  return isNvidiaNim(baseUrl) && isLikelyNvidiaFunctionId(modelId);
+}
+
+function explainChatError(plan: { provider: string; baseUrl: string; protocol: string }, modelId: string, error: unknown): string {
+  const raw = error instanceof Error ? error.message : String(error);
+  if (isInvalidModelId(plan.baseUrl, modelId)) {
+    return `NVIDIA NIM：模型 ID "${modelId}" 是 Function UUID，无法在 Chat 中使用。\n请打开 NVIDIA NIM 控制台 → Models，复制形如 meta/llama-3.1-70b-instruct 的真实模型名（仅含字母、数字、连字符、斜杠），回到 BYOK COPILOT 编辑该 Plan 并替换该模型；旧模型 ID 已被自动从 Chat 选单中隐藏。\n\n原始错误：${raw}`;
+  }
+  return raw;
+}
+
 export class ByokLanguageModelProvider implements vscode.LanguageModelChatProvider {
   private readonly changeEmitter = new vscode.EventEmitter<void>();
   readonly onDidChangeLanguageModelChatInformation = this.changeEmitter.event;
@@ -22,17 +42,19 @@ export class ByokLanguageModelProvider implements vscode.LanguageModelChatProvid
       if (plan.models.length === 0) return false;
       if (filterAvailable && !availablePlanIds?.has(plan.id)) return false;
       return true;
-    }).flatMap((plan) => plan.models.map((model) => ({
-      id: `${plan.id}:${model.id}`,
-      name: `${plan.provider} / ${model.name}`,
-      family: model.id,
-      version: '1',
-      tooltip: `${plan.provider} · ${plan.name}\n模型 ID: ${model.id}\n协议: ${plan.protocol}`,
-      detail: `Plan: ${plan.name}`,
-      maxInputTokens: model.maxInputTokens,
-      maxOutputTokens: model.maxOutputTokens,
-      capabilities: { toolCalling: model.toolCalling, imageInput: model.vision },
-    })));
+    }).flatMap((plan) => plan.models
+      .filter((model) => !isInvalidModelId(plan.baseUrl, model.id))
+      .map((model) => ({
+        id: `${plan.id}:${model.id}`,
+        name: `${plan.provider} / ${model.name}`,
+        family: model.id,
+        version: '1',
+        tooltip: `${plan.provider} · ${plan.name}\n模型 ID: ${model.id}\n协议: ${plan.protocol}`,
+        detail: `Plan: ${plan.name}`,
+        maxInputTokens: model.maxInputTokens,
+        maxOutputTokens: model.maxOutputTokens,
+        capabilities: { toolCalling: model.toolCalling, imageInput: model.vision },
+      })));
   }
 
   async provideLanguageModelChatResponse(modelInfo: vscode.LanguageModelChatInformation, messages: readonly vscode.LanguageModelChatRequestMessage[], options: vscode.ProvideLanguageModelChatResponseOptions, progress: vscode.Progress<vscode.LanguageModelResponsePart>, token: vscode.CancellationToken): Promise<void> {
@@ -45,7 +67,7 @@ export class ByokLanguageModelProvider implements vscode.LanguageModelChatProvid
       await this.store.addUsage({ planId, modelId, ...usage, requests: 1, success: true });
     } catch (error) {
       await this.store.addUsage({ planId, modelId, inputTokens: 0, outputTokens: 0, totalTokens: 0, requests: 1, success: false });
-      throw error;
+      throw new Error(explainChatError(plan, model.id, error));
     }
   }
 

@@ -16,7 +16,17 @@ const modelDefaults = (id: string): PlanModel => ({
   vision: true,
 });
 
-type ModelPayload = Record<string, unknown> & { id?: string; name?: string; display_name?: string };
+type ModelPayload = Record<string, unknown> & { id?: string; model?: string; model_name?: string; name?: string; display_name?: string };
+
+const functionUuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function modelIdFromPayload(item: ModelPayload, nvidiaNim: boolean): string {
+  const id = String(item.id ?? '').trim();
+  if (!nvidiaNim || !functionUuidPattern.test(id)) return id || String(item.name ?? '').trim();
+  const publicId = [item.model, item.model_name, item.name, item.display_name]
+    .find((value) => typeof value === 'string' && value.trim() && !functionUuidPattern.test(value.trim()));
+  return typeof publicId === 'string' ? publicId.trim() : '';
+}
 
 type ModelKnowledge = Pick<PlanModel, 'contextLength' | 'supportsTools' | 'supportsVision' | 'supportsWebSearch'> & { features?: string[] };
 
@@ -68,8 +78,8 @@ function booleanCapability(item: ModelPayload, features: string[], fieldNames: s
   return undefined;
 }
 
-function modelFromPayload(item: ModelPayload, provider: string): PlanModel {
-  const id = item.id ?? item.name ?? '';
+function modelFromPayload(item: ModelPayload, provider: string, nvidiaNim = false): PlanModel {
+  const id = modelIdFromPayload(item, nvidiaNim);
   const known = knownModel(provider, String(id));
   const features = featureNames(item);
   const contextLength = numberField(item, ['context_length', 'context_window', 'max_context_length', 'max_input_tokens', 'input_token_limit']) ?? known.contextLength;
@@ -77,6 +87,7 @@ function modelFromPayload(item: ModelPayload, provider: string): PlanModel {
   const supportsTools = booleanCapability(item, features, ['tool_calling', 'supports_tools', 'supports_tool_calling'], /tool|function.?call/i) ?? known.supportsTools;
   const supportsVision = booleanCapability(item, features, ['vision', 'supports_vision', 'image_input'], /vision|image/i) ?? known.supportsVision;
   const supportsWebSearch = booleanCapability(item, features, ['web_search', 'supports_web_search', 'internet_access'], /web.?search|internet|联网/i) ?? known.supportsWebSearch;
+  const free = nvidiaNim ? isNvidiaFreeModel(String(id)) : undefined;
   return {
     ...modelDefaults(String(id)),
     name: String(item.display_name ?? item.name ?? item.id ?? ''),
@@ -89,7 +100,34 @@ function modelFromPayload(item: ModelPayload, provider: string): PlanModel {
     supportsVision,
     supportsWebSearch,
     features: [...new Set([...(known.features ?? []), ...features])],
+    free,
   };
+}
+
+/* NVIDIA NIM 公开的免费档位标识。仅匹配有据可查的免费模型 ID，避免误判。
+   /v1/models 响应本身不携带 tier 字段，因此走保守白名单。 */
+const nvidiaFreePrefixes = [
+  /^meta\/(llama|llama3|llama-?2|llama-?3)/i,
+  /^nvidia\/nemotron/i,
+  /^mistralai\/(mistral|mixtral)/i,
+  /^google\/gemma/i,
+  /^microsoft\/phi/i,
+  /^ibm\/granite/i,
+  /^speakleash/i,
+  /^yandex\/yandexgpt/i,
+  /^rakuten\/(?:llm-)?7b/i,
+  /^bigcode\//i,
+  /^stabilityai\//i,
+  /^snowflake\/arctic/i,
+  /^databricks\/dbrx/i,
+];
+const nvidiaFreeExact = new Set([
+  '01-ai/yi-large',  /* 历史为免费档，最终以控制台为准 */
+]);
+function isNvidiaFreeModel(id: string): boolean {
+  const lowered = id.toLowerCase();
+  if (nvidiaFreeExact.has(lowered)) return true;
+  return nvidiaFreePrefixes.some((pattern) => pattern.test(id));
 }
 
 const knownEndpoints = ['/chat/completions', '/responses', '/messages', '/models'];
@@ -133,13 +171,16 @@ async function request(url: string, apiKey: string, protocol: ApiProtocol, init?
 
 export async function discoverModels(plan: PlanConfig, apiKey: string): Promise<PlanModel[]> {
   const errors: string[] = [];
+  const isNvidiaNim = (() => { try { return new URL(plan.baseUrl).host.toLowerCase().includes('integrate.api.nvidia.com'); } catch { return false; } })();
   for (const url of endpointCandidates(plan.baseUrl, '/models')) {
     try {
       const response = await request(url, apiKey, plan.protocol);
       const payload = await response.json() as { data?: ModelPayload[]; models?: ModelPayload[] };
       const items = payload.data ?? payload.models ?? [];
       const provider = `${plan.provider} ${plan.baseUrl}`;
-      const models = items.map((item) => modelFromPayload(item, provider)).filter((model) => model.id);
+      const models = items
+        .map((item) => modelFromPayload(item, provider, isNvidiaNim))
+        .filter((model) => model.id);
       if (models.length) return models.sort((a, b) => a.name.localeCompare(b.name));
       errors.push(`${url}: 没有返回模型`);
     } catch (error) {
@@ -174,6 +215,34 @@ async function probeProtocol(plan: PlanConfig, model: PlanModel, apiKey: string)
 
 export async function connectPlan(plan: PlanConfig, apiKey: string): Promise<PlanConnection> {
   const models = await discoverModels(plan, apiKey);
+  const isNvidiaNim = (() => { try { return new URL(plan.baseUrl).host.toLowerCase().includes('integrate.api.nvidia.com'); } catch { return false; } })();
+
+  if (isNvidiaNim) {
+    /* NVIDIA NIM /v1/models 返回完整目录，而非仅账户已启用的模型。
+       逐一探测所有模型，仅保留实际可用的，避免用户看到无法调用的模型。 */
+    const concurrency = 6;
+    const verified: PlanModel[] = [];
+    let index = 0;
+    const workers = Array.from({ length: Math.min(concurrency, models.length) }, async () => {
+      while (index < models.length) {
+        const model = models[index++];
+        try {
+          await probeProtocol(plan, model, apiKey);
+          verified.push(model);
+        } catch { /* 模型未启用或不可用，跳过 */ }
+      }
+    });
+    await Promise.all(workers);
+    if (verified.length) {
+      verified.sort((a, b) => a.name.localeCompare(b.name));
+      return { protocol: plan.protocol, models: verified };
+    }
+    throw new Error(
+      `NVIDIA NIM 账户没有可用的模型。/v1/models 返回了 ${models.length} 个模型，但探测全部失败。\n` +
+      `请在 build.nvidia.com → Models 页面确认至少已启用一个模型，然后重新连接。`
+    );
+  }
+
   const attempts: string[] = [];
   for (const model of probeModels(models)) {
     try {
@@ -187,15 +256,31 @@ export async function connectPlan(plan: PlanConfig, apiKey: string): Promise<Pla
 }
 
 async function requestFirst(plan: PlanConfig, apiKey: string, suffix: string, init: RequestInit): Promise<Response> {
+  const candidates = endpointCandidates(plan.baseUrl, suffix);
   const errors: string[] = [];
-  for (const url of endpointCandidates(plan.baseUrl, suffix)) {
+  for (const url of candidates) {
     try {
       return await request(url, apiKey, plan.protocol, init);
     } catch (error) {
       errors.push(`${url}: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
-  throw new Error(`没有可用的 ${suffix} 端点。\n${errors.join('\n')}`);
+  const lastMessage = errors[errors.length - 1] ?? '';
+  const guidance = guidanceFor(plan.baseUrl, suffix);
+  const modelMissing = /HTTP 404|: Not found for account|'.*': Not found|model_not_found/i.test(lastMessage);
+  const paramRejected = /Unsupported parameter|HTTP 400/i.test(lastMessage);
+  const reason = lastMessage.replace(/^https?:\/\/\S+:\s*/, '');
+  const headline = modelMissing ? `模型 ID 不存在或未分配给此账户` : paramRejected ? `供应商拒绝了请求参数` : `没有可用的 ${suffix} 端点`;
+  throw new Error(`${headline}：${reason}${guidance ? `\n${guidance}` : ''}`);
+}
+
+function guidanceFor(baseUrl: string, suffix: string): string {
+  const host = (() => { try { return new URL(baseUrl).host.toLowerCase(); } catch { return ''; } })();
+  if (host.includes('integrate.api.nvidia.com')) {
+    if (suffix === '/chat/completions') return 'NVIDIA NIM：请在 build.nvidia.com 控制台确认该模型 ID 已在 Models 页面启用且分配给了当前账户；BYOK COPILOT 只能转发 /v1/chat/completions，不会改写 model 字段。';
+    if (suffix === '/responses') return 'NVIDIA NIM 不提供 OpenAI Responses API，请改用 Chat Completions 协议。';
+  }
+  return '';
 }
 
 function textOf(parts: readonly unknown[]): string {
@@ -223,13 +308,31 @@ function toolSchema(inputSchema: unknown): Record<string, unknown> {
 }
 
 function toolsOf(options: vscode.ProvideLanguageModelChatResponseOptions): unknown[] | undefined {
-  return options.tools?.map((tool) => ({ type: 'function', function: { name: tool.name, description: tool.description, parameters: toolSchema(tool.inputSchema) } }));
+  const tools = options.tools?.map((tool) => ({ type: 'function', function: { name: tool.name, description: tool.description, parameters: toolSchema(tool.inputSchema) } }));
+  return tools && tools.length ? tools : undefined;
 }
 
 async function streamOpenAi(plan: PlanConfig, model: PlanModel, apiKey: string, messages: readonly vscode.LanguageModelChatRequestMessage[], options: vscode.ProvideLanguageModelChatResponseOptions, progress: vscode.Progress<vscode.LanguageModelResponsePart>, token: vscode.CancellationToken): Promise<ChatResult> {
   const controller = new AbortController();
   token.onCancellationRequested(() => controller.abort());
-  const response = await requestFirst(plan, apiKey, '/chat/completions', { method: 'POST', signal: controller.signal, body: JSON.stringify({ model: model.id, messages: openAiMessages(messages), tools: toolsOf(options), stream: true, stream_options: { include_usage: true }, ...options.modelOptions }) });
+  const tools = toolsOf(options);
+  const modelOptions = options.modelOptions as Record<string, unknown> | undefined;
+  const safeOptions = modelOptions
+    ? Object.fromEntries(Object.entries(modelOptions).filter(([key]) => !key.startsWith('_')))
+    : {};
+  const body: Record<string, unknown> = {
+    model: model.id,
+    messages: openAiMessages(messages),
+    stream: true,
+    ...safeOptions,
+  };
+  if (tools) body.tools = tools;
+  const response = await requestFirst(plan, apiKey, '/chat/completions', {
+    method: 'POST',
+    signal: controller.signal,
+    body: JSON.stringify(body),
+    headers: { accept: 'text/event-stream' },
+  });
   let usage = { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
   const toolCalls = new Map<number, { id: string; name: string; args: string }>();
   await readSse(response, (data) => {
@@ -268,7 +371,25 @@ async function readSse(response: Response, consume: (data: string) => void): Pro
 async function streamAnthropic(plan: PlanConfig, model: PlanModel, apiKey: string, messages: readonly vscode.LanguageModelChatRequestMessage[], options: vscode.ProvideLanguageModelChatResponseOptions, progress: vscode.Progress<vscode.LanguageModelResponsePart>, token: vscode.CancellationToken): Promise<ChatResult> {
   const controller = new AbortController(); token.onCancellationRequested(() => controller.abort());
   const converted = openAiMessages(messages).filter((item: any) => item.role !== 'tool').map((item: any) => ({ role: item.role, content: item.content || '' }));
-  const response = await requestFirst(plan, apiKey, '/messages', { method: 'POST', signal: controller.signal, body: JSON.stringify({ model: model.id, max_tokens: model.maxOutputTokens, messages: converted, tools: options.tools?.map((tool) => ({ name: tool.name, description: tool.description, input_schema: toolSchema(tool.inputSchema) })), stream: true, ...options.modelOptions }) });
+  const tools = options.tools?.map((tool) => ({ name: tool.name, description: tool.description, input_schema: toolSchema(tool.inputSchema) }));
+  const modelOptions = options.modelOptions as Record<string, unknown> | undefined;
+  const safeOptions = modelOptions
+    ? Object.fromEntries(Object.entries(modelOptions).filter(([key]) => !key.startsWith('_')))
+    : {};
+  const body: Record<string, unknown> = {
+    model: model.id,
+    max_tokens: model.maxOutputTokens,
+    messages: converted,
+    stream: true,
+    ...safeOptions,
+  };
+  if (tools && tools.length) body.tools = tools;
+  const response = await requestFirst(plan, apiKey, '/messages', {
+    method: 'POST',
+    signal: controller.signal,
+    body: JSON.stringify(body),
+    headers: { accept: 'text/event-stream' },
+  });
   let inputTokens = 0; let outputTokens = 0; const calls = new Map<number, { id: string; name: string; json: string }>();
   await readSse(response, (data) => {
     const event = JSON.parse(data) as any;
@@ -294,7 +415,19 @@ function responsesInput(messages: readonly vscode.LanguageModelChatRequestMessag
 async function streamResponses(plan: PlanConfig, model: PlanModel, apiKey: string, messages: readonly vscode.LanguageModelChatRequestMessage[], options: vscode.ProvideLanguageModelChatResponseOptions, progress: vscode.Progress<vscode.LanguageModelResponsePart>, token: vscode.CancellationToken): Promise<ChatResult> {
   const controller = new AbortController(); token.onCancellationRequested(() => controller.abort());
   const tools = options.tools?.map((tool) => ({ type: 'function', name: tool.name, description: tool.description, parameters: toolSchema(tool.inputSchema) }));
-  const response = await requestFirst(plan, apiKey, '/responses', { method: 'POST', signal: controller.signal, body: JSON.stringify({ model: model.id, input: responsesInput(messages), tools, stream: true, ...options.modelOptions }) });
+  const body: Record<string, unknown> = {
+    model: model.id,
+    input: responsesInput(messages),
+    stream: true,
+    ...options.modelOptions,
+  };
+  if (tools && tools.length) body.tools = tools;
+  const response = await requestFirst(plan, apiKey, '/responses', {
+    method: 'POST',
+    signal: controller.signal,
+    body: JSON.stringify(body),
+    headers: { accept: 'text/event-stream' },
+  });
   let usage = { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
   const calls = new Map<string, { id: string; name: string; args: string }>();
   await readSse(response, (data) => {

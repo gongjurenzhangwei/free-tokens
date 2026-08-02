@@ -42,7 +42,7 @@ function formatTimeShort(value: number | undefined): string {
 export function activate(context: vscode.ExtensionContext): void {
   const store = new PlanStore(context);
   const provider = new ByokLanguageModelProvider(store);
-  const dashboard = new Dashboard(store, provider, String(context.extension.packageJSON.version));
+  const dashboard = new Dashboard(store, provider, String(context.extension.packageJSON.version), context.extensionUri);
   const status = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 20);
   status.command = 'byokCopilot.openDashboard';
 

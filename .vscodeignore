@@ -1,8 +1,11 @@
 .github/**
 .vscode/**
+.codegraph/**
 .gitignore
 src/**
+components/**
 tsconfig.json
 node_modules/**
-!node_modules/
 dist/**/*.map
+postcss.config.js
+tailwind.config.js

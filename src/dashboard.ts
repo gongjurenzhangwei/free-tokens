@@ -35,6 +35,7 @@ export class Dashboard {
     private readonly store: PlanStore,
     private readonly provider: ByokLanguageModelProvider,
     private readonly version: string,
+    private readonly extensionUri: vscode.Uri,
   ) {}
 
   open(): void {
@@ -46,8 +47,9 @@ export class Dashboard {
     this.panel = vscode.window.createWebviewPanel('byokCopilot.dashboard', 'BYOK COPILOT', vscode.ViewColumn.One, {
       enableScripts: true,
       retainContextWhenHidden: true,
+      localResourceRoots: [vscode.Uri.joinPath(this.extensionUri, 'dist')],
     });
-    this.panel.webview.html = dashboardView(this.panel.webview, this.version);
+    this.panel.webview.html = dashboardView(this.panel.webview, this.version, this.extensionUri);
     this.panel.onDidDispose(() => { this.panel = undefined; });
     this.panel.webview.onDidReceiveMessage((message) => this.handle(message));
     this.sync();

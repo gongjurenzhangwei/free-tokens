@@ -443,10 +443,12 @@ export function dashboardView(webview: vscode.Webview, version: string): string 
 
     .plan-head, .plan {
       display: grid;
-      grid-template-columns: minmax(190px, 1.3fr) minmax(150px, .85fr) minmax(170px, 1fr) 62px 150px;
-      gap: 18px;
+      grid-template-columns: minmax(220px, 1.35fr) minmax(132px, .72fr) minmax(240px, 1.25fr) 48px 114px;
+      gap: 14px;
       align-items: center;
     }
+
+    .plan > div { min-width: 0; }
 
     .plan-head {
       min-height: 38px;
@@ -489,6 +491,9 @@ export function dashboardView(webview: vscode.Webview, version: string): string 
       margin-bottom: 4px;
       font-size: 13px;
       letter-spacing: 0.04em;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .plan-provider {
@@ -496,6 +501,9 @@ export function dashboardView(webview: vscode.Webview, version: string): string 
       color: var(--muted);
       letter-spacing: 0.16em;
       text-transform: uppercase;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .protocol {
@@ -533,6 +541,12 @@ export function dashboardView(webview: vscode.Webview, version: string): string 
       color: var(--muted);
       font-size: 10px;
       letter-spacing: 0.05em;
+    }
+
+    .model-names {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .quota {
@@ -777,7 +791,7 @@ export function dashboardView(webview: vscode.Webview, version: string): string 
 
     body.loading { cursor: progress; }
 
-    @media (max-width: 840px) {
+    @media (max-width: 960px) {
       .overview { grid-template-columns: 1fr 1fr; }
       .metric:nth-child(2) { border-right: 0; }
       .metric:nth-child(-n+2) { border-bottom: 1px solid var(--line); }

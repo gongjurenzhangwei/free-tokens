@@ -762,15 +762,16 @@ export function dashboardView(webview: vscode.Webview, version: string): string 
       display: grid;
       grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 130px auto;
       gap: 8px;
-      align-items: end;
+      align-items: stretch;
       padding: 12px;
       margin-top: 10px;
       border: 1px dashed var(--line);
       border-radius: var(--radius);
       background: color-mix(in srgb, var(--cyan) 4%, transparent);
     }
-    .custom-model-form .compact { margin: 0; }
+    .custom-model-form .compact { margin: 0; display: flex; flex-direction: column; gap: 4px; }
     .custom-model-form .compact label { font-size: 9px; }
+    .custom-model-form .compact input { width: 100%; min-height: 34px; }
     .custom-model-form .custom-add { white-space: nowrap; min-height: 34px; align-self: end; }
     .custom-model-form .custom-error { grid-column: 1 / -1; color: var(--magenta); font: 500 10px var(--mono); letter-spacing: 0.06em; min-height: 14px; }
 

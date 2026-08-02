@@ -2,7 +2,7 @@
   "name": "byok-copilot",
   "displayName": "BYOK COPILOT",
   "description": "Connect token plans, coding plans, and custom model endpoints to VS Code Copilot Chat.",
-  "version": "0.1.14",
+  "version": "0.1.15",
   "publisher": "byok-copilot",
   "license": "UNLICENSED",
   "engines": {

@@ -115,19 +115,26 @@ export function dashboardView(webview: vscode.Webview, version: string): string 
 
     .topbar {
       height: 68px;
-      padding: 0 28px;
       border-bottom: 1px solid color-mix(in srgb, var(--cyan) 35%, var(--line));
       background:
         linear-gradient(180deg, color-mix(in srgb, var(--cyan) 6%, transparent), transparent 60%),
         color-mix(in srgb, var(--bg) 92%, transparent);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
       position: sticky;
       top: 0;
       z-index: 10;
       backdrop-filter: blur(14px);
       box-shadow: 0 1px 0 color-mix(in srgb, var(--cyan) 50%, transparent), 0 4px 22px rgba(0, 0, 0, 0.35);
+    }
+
+    .topbar-inner {
+      width: 100%;
+      max-width: 1280px;
+      height: 100%;
+      margin: 0 auto;
+      padding: 0 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
     }
 
     .brand { display: flex; align-items: center; gap: 14px; }
@@ -784,7 +791,7 @@ export function dashboardView(webview: vscode.Webview, version: string): string 
     }
 
     @media (max-width: 520px) {
-      .topbar { padding: 0 14px; }
+      .topbar-inner { padding: 0 12px; }
       .live { display: none; }
       .layout { padding: 16px 12px 44px; }
       .overview { grid-template-columns: 1fr 1fr; }
@@ -807,24 +814,26 @@ export function dashboardView(webview: vscode.Webview, version: string): string 
 <body>
   <div class="shell">
     <header class="topbar">
-      <div class="brand">
-        <div class="signal">BY</div>
-        <div class="brand-copy">
-          <h1>BYOK COPILOT</h1>
-          <div class="brand-meta">PROVIDER_CONTROL / v${version}</div>
+      <div class="topbar-inner">
+        <div class="brand">
+          <div class="signal">BY</div>
+          <div class="brand-copy">
+            <h1>BYOK COPILOT</h1>
+            <div class="brand-meta">PROVIDER_CONTROL / v${version}</div>
+          </div>
         </div>
-      </div>
-      <div class="toolbar">
-        <div class="live"><span class="live-dot"></span>EXT_ONLINE</div>
-        <select id="language" class="control language-select" aria-label="界面语言">
-          <option value="zh-CN">中文</option>
-          <option value="en">EN</option>
-        </select>
-        <button id="themeToggle" class="button secondary icon-button" title="切换白天/暗黑模式" aria-label="切换白天/暗黑模式">☀</button>
-        <button id="add" class="button">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-          <span id="addLabel">New_Plan</span>
-        </button>
+        <div class="toolbar">
+          <div class="live"><span class="live-dot"></span>EXT_ONLINE</div>
+          <select id="language" class="control language-select" aria-label="界面语言">
+            <option value="zh-CN">中文</option>
+            <option value="en">EN</option>
+          </select>
+          <button id="themeToggle" class="button secondary icon-button" title="切换白天/暗黑模式" aria-label="切换白天/暗黑模式">☀</button>
+          <button id="add" class="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            <span id="addLabel">New_Plan</span>
+          </button>
+        </div>
       </div>
     </header>
     <main class="layout">

@@ -15,6 +15,7 @@
 - MiniMax Token Plan 可通过官方接口刷新 5 小时滚动窗口和周限额。
 - 状态栏可选择仅显示 `BYOK`、显示本地 Token 用量或显示最新官方配额。
 - Dashboard 支持暗黑与白天模式，并会记住选择。
+- Dashboard 菜单栏支持中文与英文即时切换，并同步本地化状态栏、悬浮用量面板和操作提示。
 - `Only Available` 只向聊天模型选择器提供已启用、已选模型且 SecretStorage 中存在 API Key 的 Plan；Dashboard 始终保留全部 Plan。
 - 使用 `Manage Models` 打开 VS Code 官方 Language Models 管理器，再用眼睛图标隐藏不需要的 GitHub Copilot 默认模型。
 

@@ -180,6 +180,7 @@ export function dashboardView(webview: vscode.Webview, version: string): string 
     @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.4); opacity: 0.6; } }
 
     .toolbar { display: flex; align-items: center; gap: 14px; }
+    .language-select { width: 92px; color: var(--cyan); border-color: color-mix(in srgb, var(--cyan) 45%, var(--line)); }
 
     .layout { max-width: 1280px; margin: 0 auto; padding: 26px 28px 64px; position: relative; z-index: 3; }
 
@@ -815,10 +816,14 @@ export function dashboardView(webview: vscode.Webview, version: string): string 
       </div>
       <div class="toolbar">
         <div class="live"><span class="live-dot"></span>EXT_ONLINE</div>
+        <select id="language" class="control language-select" aria-label="界面语言">
+          <option value="zh-CN">中文</option>
+          <option value="en">EN</option>
+        </select>
         <button id="themeToggle" class="button secondary icon-button" title="切换白天/暗黑模式" aria-label="切换白天/暗黑模式">☀</button>
         <button id="add" class="button">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-          New_Plan
+          <span id="addLabel">New_Plan</span>
         </button>
       </div>
     </header>
@@ -826,27 +831,27 @@ export function dashboardView(webview: vscode.Webview, version: string): string 
       <section class="overview" id="metrics" aria-label="最近 30 天统计"></section>
       <div class="section-head">
         <div class="section-title">
-          <h2>Connection Manager</h2>
-          <p class="muted">供应商 / 协议 / 模型 / 官方配额</p>
+          <h2 id="connectionTitle">连接管理</h2>
+          <p class="muted" id="connectionSubtitle">供应商 / 协议 / 模型 / 官方配额</p>
         </div>
         <div class="settings settings-grid">
           <div class="compact">
-            <label for="statusMode">STATUS_BAR</label>
+            <label for="statusMode" id="statusModeLabel">状态栏</label>
             <select id="statusMode" class="control">
-              <option value="off">[ OFF ] 不显示用量</option>
-              <option value="tokens">[ TOK ] 本地 Token</option>
-              <option value="quota">[ QTA ] 官方配额</option>
+              <option value="off"></option>
+              <option value="tokens"></option>
+              <option value="quota"></option>
             </select>
           </div>
           <div class="compact" id="statusPlanField">
-            <label for="statusPlan">SOURCE</label>
+            <label for="statusPlan" id="statusPlanLabel">来源</label>
             <select id="statusPlan" class="control"></select>
           </div>
           <label class="toggle-row" id="filterAvailableRow" title="开启后，聊天模型选择器仅显示已启用、已选模型且已配置 API Key 的 Plan。">
             <input type="checkbox" id="filterAvailable">
-            <span>[ Only_Available ]</span>
+            <span id="filterAvailableLabel">[ 仅显示可用 ]</span>
           </label>
-          <button class="button secondary" id="manageModels" title="打开 VS Code 官方模型管理器，可用眼睛图标隐藏 GitHub Copilot 默认模型">Manage_Models</button>
+          <button class="button secondary" id="manageModels" title="打开 VS Code 官方模型管理器，可用眼睛图标隐藏 GitHub Copilot 默认模型">管理模型</button>
         </div>
       </div>
       <div class="settings-info" id="filterHint" hidden>
@@ -855,10 +860,10 @@ export function dashboardView(webview: vscode.Webview, version: string): string 
       </div>
       <section class="plans">
         <div class="plan-head">
-          <span>Plan / Provider</span>
-          <span>Protocol</span>
-          <span>Usage / Quota</span>
-          <span>State</span>
+          <span id="planHeader">Plan / 供应商</span>
+          <span id="protocolHeader">协议</span>
+          <span id="usageHeader">用量 / 配额</span>
+          <span id="stateHeader">状态</span>
           <span></span>
         </div>
         <div id="plans"></div>
@@ -897,7 +902,7 @@ export function dashboardView(webview: vscode.Webview, version: string): string 
         </select>
       </div>
       <div class="field">
-        <label for="name">PLAN_NAME</label>
+        <label for="name" id="planNameLabel">PLAN 名称</label>
         <input id="name" required placeholder="例如：MiniMax Coding">
       </div>
       <div class="field wide">
@@ -923,7 +928,7 @@ export function dashboardView(webview: vscode.Webview, version: string): string 
       <div class="field wide fetch-row">
         <button type="button" class="button secondary" id="fetchModels">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v6h-6"/></svg>
-          Test_&_Fetch
+          <span id="fetchModelsLabel">测试并获取</span>
         </button>
         <div id="connectionStatus" class="hint" aria-live="polite">填写连接信息后测试。</div>
       </div>
@@ -931,8 +936,8 @@ export function dashboardView(webview: vscode.Webview, version: string): string 
         <div id="modelPreview" class="model-list" hidden></div>
       </div>
       <div class="dialog-actions">
-        <button type="button" class="button secondary" id="cancel">Cancel</button>
-        <button type="submit" class="button" id="save" disabled>Save_Plan</button>
+        <button type="button" class="button secondary" id="cancel">取消</button>
+        <button type="submit" class="button" id="save" disabled>保存 Plan</button>
       </div>
     </form>
   </dialog>
@@ -959,29 +964,106 @@ export function dashboardView(webview: vscode.Webview, version: string): string 
       xai: { provider: 'xAI', url: 'https://api.x.ai', protocol: 'openai' }
     };
     const protocolNames = { responses: 'Responses API', openai: 'Chat Completions', anthropic: 'Anthropic Messages' };
-    const protocolNotes = {
-      responses: '使用 /v1/responses。适合 OpenAI 新一代响应接口。',
-      openai: '使用 /v1/chat/completions。适合大多数 OpenAI 兼容供应商。',
-      anthropic: '使用 /v1/messages，并发送 x-api-key 与 anthropic-version 请求头。'
+    const translations = {
+      'zh-CN': {
+        language: '界面语言', themeLight: '切换到白天模式', themeDark: '切换到暗黑模式', newPlan: '新建 Plan',
+        metricsLabel: '最近 30 天统计',
+        connectionTitle: '连接管理', connectionSubtitle: '供应商 / 协议 / 模型 / 官方配额', statusBar: '状态栏', source: '来源',
+        statusOff: '[ OFF ] 不显示用量', statusTokens: '[ TOK ] 本地 Token', statusQuota: '[ QTA ] 官方配额',
+        onlyAvailable: '[ 仅显示可用 ]', filterTitle: '开启后，聊天模型选择器仅显示已启用、已选模型且已配置 API Key 的 Plan。',
+        manageModels: '管理模型', manageModelsTitle: '打开 VS Code 官方模型管理器，可用眼睛图标隐藏 GitHub Copilot 默认模型',
+        filterHint: '<b>[过滤已启用]</b> 聊天模型选择器仅显示：Plan 已启用、至少选择一个模型、SecretStorage 中存在 API Key。Dashboard 仍保留所有 Plan，方便修复配置。',
+        planProvider: 'Plan / 供应商', protocol: '协议', usageQuota: '用量 / 配额', state: '状态', close: '关闭',
+        connectPlan: '接入 Plan', editPlan: '编辑 Plan', planName: 'PLAN 名称', customPreset: '[ Custom ] 自定义 / Coding Plan',
+        planNamePlaceholder: '例如：MiniMax Coding', keyHint: '仅保存在 VS Code SecretStorage', keyPlaceholder: '编辑留空 = 保留原密钥',
+        testFetch: '测试并获取', fillThenTest: '填写连接信息后测试。', cancel: '取消', savePlan: '保存 Plan', searchModels: '搜索模型',
+        selectAll: '全选', clearAll: '清空', noMatch: '// 无匹配模型', configChanged: '配置已变化，请重新测试连接。',
+        selectedModels: count => '当前已选择 ' + count + ' 个模型。', invalidConnection: '请填写有效的 Base URL 和 API Key。',
+        testing: protocol => '正在使用 ' + protocol + ' 测试连接...', connected: (protocol, count) => '连接成功 · ' + protocol + ' · ' + count + ' 个模型',
+        enabledPlans: '启用的 Plan', apiCalls: 'API 调用', inputTokens: '输入 Token', outputTokens: '输出 Token', units: '个', count: '次',
+        quotaNotFetched: '尚未获取配额', quotaUnit: '额度单位', unlimited: '不限量', noData: '无数据', available: '可用', disabled: '已停用', noModels: '无模型', noKey: '无密钥',
+        models: '个模型', noModelsText: '无模型', localTokens: '本地 Token', localStats: '30 天本地 Token 统计',
+        enablePlan: '启用 Plan', refreshQuota: '刷新官方配额', edit: '编辑', delete: '删除', noPlans: '// 尚未接入 Plan，请点击 [新建 Plan]',
+        protocolResponses: '使用 /v1/responses。适合 OpenAI 新一代响应接口。', protocolOpenai: '使用 /v1/chat/completions。适合大多数 OpenAI 兼容供应商。', protocolAnthropic: '使用 /v1/messages，并发送 x-api-key 与 anthropic-version 请求头。'
+      },
+      en: {
+        language: 'Interface language', themeLight: 'Switch to light mode', themeDark: 'Switch to dark mode', newPlan: 'New Plan',
+        metricsLabel: 'Statistics for the last 30 days',
+        connectionTitle: 'Connection Manager', connectionSubtitle: 'Provider / Protocol / Models / Official quota', statusBar: 'Status bar', source: 'Source',
+        statusOff: '[ OFF ] Hide usage', statusTokens: '[ TOK ] Local tokens', statusQuota: '[ QTA ] Official quota',
+        onlyAvailable: '[ Only Available ]', filterTitle: 'Only expose enabled plans with selected models and an API key in the chat model picker.',
+        manageModels: 'Manage Models', manageModelsTitle: 'Open the official VS Code model manager. Use the eye icon to hide GitHub Copilot models.',
+        filterHint: '<b>[FILTER ACTIVE]</b> The chat model picker only shows plans that are enabled, contain at least one selected model, and have an API key in SecretStorage. All plans remain visible here for configuration.',
+        planProvider: 'Plan / Provider', protocol: 'Protocol', usageQuota: 'Usage / Quota', state: 'State', close: 'Close',
+        connectPlan: 'Connect Plan', editPlan: 'Edit Plan', planName: 'Plan name', customPreset: '[ Custom ] Custom / Coding Plan',
+        planNamePlaceholder: 'Example: MiniMax Coding', keyHint: 'Stored only in VS Code SecretStorage', keyPlaceholder: 'Leave blank while editing to keep the current key',
+        testFetch: 'Test & Fetch', fillThenTest: 'Enter connection details, then test.', cancel: 'Cancel', savePlan: 'Save Plan', searchModels: 'Search models',
+        selectAll: 'Select All', clearAll: 'Clear All', noMatch: '// NO MATCH', configChanged: 'Configuration changed. Test the connection again.',
+        selectedModels: count => count + ' model(s) currently selected.', invalidConnection: 'Enter a valid Base URL and API key.',
+        testing: protocol => 'Testing connection with ' + protocol + '...', connected: (protocol, count) => 'Connected · ' + protocol + ' · ' + count + ' model(s)',
+        enabledPlans: 'Enabled plans', apiCalls: 'API calls', inputTokens: 'Input tokens', outputTokens: 'Output tokens', units: 'units', count: 'calls',
+        quotaNotFetched: 'Quota not fetched', quotaUnit: 'quota units', unlimited: 'UNLIMITED', noData: 'NO DATA', available: 'AVAILABLE', disabled: 'DISABLED', noModels: 'NO MODELS', noKey: 'NO KEY',
+        models: 'models', noModelsText: 'no models', localTokens: 'local tokens', localStats: '30D local token stats',
+        enablePlan: 'Enable plan', refreshQuota: 'Refresh official quota', edit: 'Edit', delete: 'Delete', noPlans: '// NO PLANS CONNECTED — Select [New Plan] to begin',
+        protocolResponses: 'Uses /v1/responses for the current OpenAI Responses API.', protocolOpenai: 'Uses /v1/chat/completions for most OpenAI-compatible providers.', protocolAnthropic: 'Uses /v1/messages with the x-api-key and anthropic-version headers.'
+      }
     };
     const icons = {
       quota: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
       edit: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg>',
       trash: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2m3 0-1 14H6L5 6M10 11v5M14 11v5"/></svg>'
     };
-    let state = { plans: [], planAvailability: {}, usage: [], quotas: [], settings: { statusBarUsage: 'off', dashboardTheme: 'system' } };
+    let state = { plans: [], planAvailability: {}, usage: [], quotas: [], settings: { statusBarUsage: 'off', dashboardTheme: 'system', language: 'zh-CN' } };
     let testRequest = 0, tested, editingEnabled = true;
     let selectedModelIds = new Set();
     const $ = id => document.getElementById(id);
     const esc = value => String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
-    const formatNumber = value => new Intl.NumberFormat('zh-CN', { notation: Number(value) >= 10000 ? 'compact' : 'standard', maximumFractionDigits: 1 }).format(Number(value) || 0);
-    const formatTime = value => new Date(value).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+    const language = () => state.settings.language === 'en' ? 'en' : 'zh-CN';
+    const t = (key, ...args) => { const value = translations[language()][key]; return typeof value === 'function' ? value(...args) : value; };
+    const formatNumber = value => new Intl.NumberFormat(language(), { notation: Number(value) >= 10000 ? 'compact' : 'standard', maximumFractionDigits: 1 }).format(Number(value) || 0);
+    const formatTime = value => new Date(value).toLocaleString(language(), { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
     const PALETTE = ['#00f0ff', '#39ff14', '#ffb627', '#ff2ec4', '#ff5577', '#7d5fff'];
     function applyTheme(theme) {
       const resolved = theme === 'system' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : theme;
       document.documentElement.dataset.theme = resolved;
       $('themeToggle').textContent = resolved === 'dark' ? '☀' : '☾';
-      $('themeToggle').title = resolved === 'dark' ? '切换到白天模式' : '切换到暗黑模式';
+      $('themeToggle').title = resolved === 'dark' ? t('themeLight') : t('themeDark');
+      $('themeToggle').ariaLabel = $('themeToggle').title;
+    }
+    function applyLanguage() {
+      document.documentElement.lang = language();
+      $('language').value = language();
+      $('language').ariaLabel = t('language');
+      $('metrics').ariaLabel = t('metricsLabel');
+      $('addLabel').textContent = t('newPlan');
+      $('connectionTitle').textContent = t('connectionTitle');
+      $('connectionSubtitle').textContent = t('connectionSubtitle');
+      $('statusModeLabel').textContent = t('statusBar');
+      $('statusPlanLabel').textContent = t('source');
+      $('statusMode').options[0].textContent = t('statusOff');
+      $('statusMode').options[1].textContent = t('statusTokens');
+      $('statusMode').options[2].textContent = t('statusQuota');
+      $('filterAvailableLabel').textContent = t('onlyAvailable');
+      $('filterAvailableRow').title = t('filterTitle');
+      $('manageModels').textContent = t('manageModels');
+      $('manageModels').title = t('manageModelsTitle');
+      $('filterHint').innerHTML = t('filterHint');
+      $('planHeader').textContent = t('planProvider');
+      $('protocolHeader').textContent = t('protocol');
+      $('usageHeader').textContent = t('usageQuota');
+      $('stateHeader').textContent = t('state');
+      $('close').ariaLabel = t('close');
+      $('preset').options[0].textContent = t('customPreset');
+      $('planNameLabel').textContent = t('planName');
+      $('name').placeholder = t('planNamePlaceholder');
+      $('keyHint').textContent = t('keyHint');
+      $('apiKey').placeholder = t('keyPlaceholder');
+      $('fetchModelsLabel').textContent = t('testFetch');
+      $('cancel').textContent = t('cancel');
+      $('save').textContent = t('savePlan');
+      $('modelSearch').ariaLabel = t('searchModels');
+      $('selectAllModels').textContent = t('selectAll');
+      $('clearAllModels').textContent = t('clearAll');
     }
     function pixelBar(percent, width) {
       width = width || 14;
@@ -998,11 +1080,11 @@ export function dashboardView(webview: vscode.Webview, version: string): string 
       return html;
     }
     function quotaText(snapshot) {
-      if (!snapshot) return '<span style="color:var(--muted)">QUOTA_NOT_FETCHED</span>';
+      if (!snapshot) return '<span style="color:var(--muted)">' + esc(t('quotaNotFetched')) + '</span>';
       return snapshot.windows.map(window => {
         const percent = window.percentUsed ?? (window.limit ? (window.used || 0) / window.limit * 100 : undefined);
-        const counts = window.used !== undefined && window.limit !== undefined ? formatNumber(window.used) + ' / ' + formatNumber(window.limit) + ' ' + esc(window.unit || '额度单位') : '';
-        const value = window.unlimited ? '∞ UNLIMITED' : (counts || 'NO_DATA');
+        const counts = window.used !== undefined && window.limit !== undefined ? formatNumber(window.used) + ' / ' + formatNumber(window.limit) + ' ' + esc(window.unit || t('quotaUnit')) : '';
+        const value = window.unlimited ? '∞ ' + t('unlimited') : (counts || t('noData'));
         const bar = percent !== undefined ? pixelBar(percent) : '';
         return '<div style="margin:2px 0">' + esc(window.label) + ' · ' + esc(value) + (window.resetAt ? ' · ⟳ ' + esc(formatTime(window.resetAt)) : '') + '</div>' + bar;
       }).join('');
@@ -1017,20 +1099,22 @@ export function dashboardView(webview: vscode.Webview, version: string): string 
           statusBarPlanId: $('statusPlan').value || undefined,
           filterAvailable: $('filterAvailable').checked,
           dashboardTheme: state.settings.dashboardTheme || 'system',
+          language: language(),
         }
       });
     }
     function render() {
+      applyLanguage();
       const totals = state.usage.reduce((sum, item) => ({
         requests: sum.requests + item.requests,
         input: sum.input + item.inputTokens,
         output: sum.output + item.outputTokens
       }), { requests: 0, input: 0, output: 0 });
       const metrics = [
-        ['ENABLED_PLANS', state.plans.filter(plan => plan.enabled).length, 'units'],
-        ['API_CALLS', formatNumber(totals.requests), 'count'],
-        ['INPUT_TOKENS', formatNumber(totals.input), 'tok'],
-        ['OUTPUT_TOKENS', formatNumber(totals.output), 'tok']
+        [t('enabledPlans'), state.plans.filter(plan => plan.enabled).length, t('units')],
+        [t('apiCalls'), formatNumber(totals.requests), t('count')],
+        [t('inputTokens'), formatNumber(totals.input), 'tok'],
+        [t('outputTokens'), formatNumber(totals.output), 'tok']
       ];
       $('metrics').innerHTML = metrics.map(item => '<div class="metric"><span class="metric-label">' + item[0] + '</span><span class="metric-value">' + item[1] + '</span><span class="metric-unit">' + item[2] + '</span></div>').join('');
       const quotaPlans = state.plans.filter(isMiniMax);
@@ -1049,10 +1133,10 @@ export function dashboardView(webview: vscode.Webview, version: string): string 
         const miniMax = isMiniMax(plan);
         const available = plan.enabled && plan.models.length > 0 && state.planAvailability[plan.id] === true;
         const availabilityBadge = available
-          ? '<span class="capability" style="color:var(--green);border-color:color-mix(in srgb,var(--green) 50%,var(--line))">AVAILABLE</span>'
-          : '<span class="capability" style="color:var(--amber);border-color:color-mix(in srgb,var(--amber) 50%,var(--line))">' + (!plan.enabled ? 'DISABLED' : !plan.models.length ? 'NO_MODELS' : 'NO_KEY') + '</span>';
-        return '<article class="plan"><div><div class="plan-name">' + esc(plan.name) + '</div><div class="plan-provider">' + esc(plan.provider) + ' · ' + plan.models.length + ' models</div><div class="model-names">' + esc(plan.models.slice(0, 3).map(model => model.name).join(' / ') || 'no_models') + '</div><div class="capabilities" style="margin-top:6px">' + availabilityBadge + '</div></div><div><span class="protocol">' + esc(protocolNames[plan.protocol] || plan.protocol) + '</span></div><div><div class="usage-value">' + formatNumber(usage.totalTokens) + ' local tok</div><div class="quota">' + (miniMax ? quotaText(quota) : '⟵ 30D_LOCAL_TOKEN_STATS') + '</div></div><div><label class="switch" title="启用 Plan"><input data-toggle="' + esc(plan.id) + '" type="checkbox" ' + (plan.enabled ? 'checked' : '') + '><span class="slider"></span></label></div><div class="actions">' + (miniMax ? '<button class="button secondary icon-button" data-quota="' + esc(plan.id) + '" title="刷新官方配额">' + icons.quota + '</button>' : '') + '<button class="button secondary icon-button" data-edit="' + esc(plan.id) + '" title="编辑">' + icons.edit + '</button><button class="button secondary icon-button" data-delete="' + esc(plan.id) + '" title="删除">' + icons.trash + '</button></div></article>';
-      }).join('') : '<div class="empty">// NO_PLANS_CONNECTED — Press [New_Plan] to begin</div>';
+          ? '<span class="capability" style="color:var(--green);border-color:color-mix(in srgb,var(--green) 50%,var(--line))">' + t('available') + '</span>'
+          : '<span class="capability" style="color:var(--amber);border-color:color-mix(in srgb,var(--amber) 50%,var(--line))">' + (!plan.enabled ? t('disabled') : !plan.models.length ? t('noModels') : t('noKey')) + '</span>';
+        return '<article class="plan"><div><div class="plan-name">' + esc(plan.name) + '</div><div class="plan-provider">' + esc(plan.provider) + ' · ' + plan.models.length + ' ' + t('models') + '</div><div class="model-names">' + esc(plan.models.slice(0, 3).map(model => model.name).join(' / ') || t('noModelsText')) + '</div><div class="capabilities" style="margin-top:6px">' + availabilityBadge + '</div></div><div><span class="protocol">' + esc(protocolNames[plan.protocol] || plan.protocol) + '</span></div><div><div class="usage-value">' + formatNumber(usage.totalTokens) + ' ' + t('localTokens') + '</div><div class="quota">' + (miniMax ? quotaText(quota) : '⟵ ' + t('localStats')) + '</div></div><div><label class="switch" title="' + t('enablePlan') + '"><input data-toggle="' + esc(plan.id) + '" type="checkbox" ' + (plan.enabled ? 'checked' : '') + '><span class="slider"></span></label></div><div class="actions">' + (miniMax ? '<button class="button secondary icon-button" data-quota="' + esc(plan.id) + '" title="' + t('refreshQuota') + '">' + icons.quota + '</button>' : '') + '<button class="button secondary icon-button" data-edit="' + esc(plan.id) + '" title="' + t('edit') + '">' + icons.edit + '</button><button class="button secondary icon-button" data-delete="' + esc(plan.id) + '" title="' + t('delete') + '">' + icons.trash + '</button></div></article>';
+      }).join('') : '<div class="empty">' + t('noPlans') + '</div>';
     }
     function planInput() {
       const preset = presets[$('preset').value];
@@ -1108,12 +1192,12 @@ export function dashboardView(webview: vscode.Webview, version: string): string 
       const visible = visibleModels(models);
       $('modelTools').hidden = !models.length;
       $('modelPreview').hidden = !models.length;
-      $('modelCount').textContent = visible.length + ' / ' + models.length + ' models';
+      $('modelCount').textContent = visible.length + ' / ' + models.length + ' ' + t('models');
       $('selectAllModels').disabled = !visible.length;
       $('clearAllModels').disabled = !visible.length;
-      $('modelPreview').innerHTML = visible.length ? visible.map(model => '<label class="model-option"><input type="checkbox" data-model-id="' + esc(model.id) + '" ' + (selectedModelIds.has(model.id) ? 'checked' : '') + '><span class="model-copy"><span class="model-title">' + esc(model.name) + '</span><span class="capabilities">' + capabilityLabels(model).map(label => '<span class="capability">' + esc(label) + '</span>').join('') + '</span></span></label>').join('') : '<div class="empty-models">// NO_MATCH</div>';
+      $('modelPreview').innerHTML = visible.length ? visible.map(model => '<label class="model-option"><input type="checkbox" data-model-id="' + esc(model.id) + '" ' + (selectedModelIds.has(model.id) ? 'checked' : '') + '><span class="model-copy"><span class="model-title">' + esc(model.name) + '</span><span class="capabilities">' + capabilityLabels(model).map(label => '<span class="capability">' + esc(label) + '</span>').join('') + '</span></span></label>').join('') : '<div class="empty-models">' + t('noMatch') + '</div>';
     }
-    function updateProtocolNote() { $('protocolNote').textContent = protocolNotes[$('protocol').value] || ''; }
+    function updateProtocolNote() { $('protocolNote').textContent = t($('protocol').value === 'responses' ? 'protocolResponses' : $('protocol').value === 'anthropic' ? 'protocolAnthropic' : 'protocolOpenai'); }
     function invalidateModels() {
       testRequest++;
       tested = undefined;
@@ -1124,7 +1208,7 @@ export function dashboardView(webview: vscode.Webview, version: string): string 
       $('modelSearch').value = '';
       $('modelPreview').hidden = true;
       $('modelPreview').textContent = '';
-      $('connectionStatus').textContent = '配置已变化，请重新测试连接。';
+      $('connectionStatus').textContent = t('configChanged');
     }
     function openEditor(plan) {
       testRequest++;
@@ -1150,8 +1234,8 @@ export function dashboardView(webview: vscode.Webview, version: string): string 
         selectedModelIds.clear();
       }
       $('apiKey').required = !plan;
-      $('title').textContent = plan ? '编辑 Plan' : '接入 Plan';
-      $('connectionStatus').textContent = plan ? '当前已选择 ' + plan.models.length + ' 个模型。' : '填写连接信息后测试。';
+      $('title').textContent = plan ? t('editPlan') : t('connectPlan');
+      $('connectionStatus').textContent = plan ? t('selectedModels', plan.models.length) : t('fillThenTest');
       $('save').disabled = !plan;
       updateProtocolNote();
       $('editor').showModal();
@@ -1162,6 +1246,15 @@ export function dashboardView(webview: vscode.Webview, version: string): string 
     $('close').onclick = $('cancel').onclick = () => $('editor').close();
     $('statusMode').onchange = () => { $('statusPlanField').hidden = $('statusMode').value !== 'quota'; saveStatus(); };
     $('statusPlan').onchange = saveStatus;
+    $('language').onchange = () => {
+      state.settings.language = $('language').value;
+      render();
+      if ($('editor').open) {
+        $('title').textContent = $('id').value ? t('editPlan') : t('connectPlan');
+        updateProtocolNote();
+      }
+      saveStatus();
+    };
     $('filterAvailable').onchange = () => { saveStatus(); render(); };
     $('manageModels').onclick = () => vscode.postMessage({ type: 'manageLanguageModels' });
     $('themeToggle').onclick = () => {
@@ -1182,12 +1275,12 @@ export function dashboardView(webview: vscode.Webview, version: string): string 
     $('baseUrl').oninput = $('apiKey').oninput = invalidateModels;
     $('fetchModels').onclick = () => {
       if (!$('baseUrl').reportValidity() || (!$('apiKey').value && !$('id').value)) {
-        $('connectionStatus').textContent = '请填写有效的 Base URL 和 API Key。';
+        $('connectionStatus').textContent = t('invalidConnection');
         return;
       }
       const requestId = ++testRequest;
       $('fetchModels').disabled = true;
-      $('connectionStatus').textContent = '正在使用 ' + protocolNames[$('protocol').value] + ' 测试连接...';
+      $('connectionStatus').textContent = t('testing', protocolNames[$('protocol').value]);
       vscode.postMessage({ type: 'testPlan', requestId, plan: planInput() });
     };
     $('modelSearch').oninput = () => {
@@ -1239,7 +1332,7 @@ export function dashboardView(webview: vscode.Webview, version: string): string 
           tested = event.data.connection;
           selectedModelIds = new Set(tested.models.map(model => model.id));
           $('modelSearch').value = '';
-          $('connectionStatus').textContent = '连接成功 · ' + protocolNames[tested.protocol] + ' · ' + tested.models.length + ' models';
+          $('connectionStatus').textContent = t('connected', protocolNames[tested.protocol], tested.models.length);
           renderModelChoices(tested.models);
           $('save').disabled = !tested.models.length;
         } else {

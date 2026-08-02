@@ -188,6 +188,7 @@ export function dashboardView(webview: vscode.Webview, version: string): string 
 
     .toolbar { display: flex; align-items: center; gap: 14px; }
     .language-select { width: 92px; color: var(--cyan); border-color: color-mix(in srgb, var(--cyan) 45%, var(--line)); }
+    .style-select { width: 142px; color: var(--cyan); border-color: color-mix(in srgb, var(--cyan) 45%, var(--line)); }
 
     .layout { max-width: 1280px; margin: 0 auto; padding: 26px 28px 64px; position: relative; z-index: 3; }
 
@@ -791,7 +792,275 @@ export function dashboardView(webview: vscode.Webview, version: string): string 
 
     body.loading { cursor: progress; }
 
+    html[data-style="glass"] {
+      --radius: 8px;
+      --cyan: #57e6ff;
+      --cyan-soft: #8beeff;
+      --magenta: #ff5bbd;
+      --green: #62f6a6;
+      --amber: #ffc857;
+      --glass: color-mix(in srgb, var(--surface) 54%, transparent);
+      --glass-strong: color-mix(in srgb, var(--surface-2) 70%, transparent);
+      --glass-line: color-mix(in srgb, #dffaff 25%, transparent);
+      --glass-shadow: 0 18px 50px rgba(0, 0, 0, 0.22), inset 0 1px 0 color-mix(in srgb, #ffffff 24%, transparent);
+    }
+
+    html[data-style="glass"][data-theme="dark"] {
+      --bg: #081016;
+      --fg: #edfaff;
+      --surface: #142530;
+      --surface-2: #19313c;
+      --input-bg: rgba(10, 26, 34, 0.58);
+      --notice-bg: rgba(17, 38, 47, 0.88);
+      --muted: #9ab2bc;
+      --line: rgba(175, 231, 240, 0.16);
+    }
+
+    html[data-style="glass"][data-theme="light"] {
+      --bg: #dfeef2;
+      --fg: #102a34;
+      --surface: #f8fdff;
+      --surface-2: #e7f5f7;
+      --input-bg: rgba(255, 255, 255, 0.62);
+      --notice-bg: rgba(255, 255, 255, 0.9);
+      --muted: #536e77;
+      --line: rgba(34, 99, 112, 0.18);
+      --cyan: #007f99;
+      --cyan-soft: #1598ad;
+      --magenta: #c72b7d;
+      --green: #168450;
+      --amber: #9c6500;
+      --glass-line: rgba(255, 255, 255, 0.8);
+      --glass-shadow: 0 18px 48px rgba(27, 74, 84, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    }
+
+    html[data-style="glass"] body {
+      font-family: 'Segoe UI Variable', 'Segoe UI', 'Bahnschrift', sans-serif;
+      background:
+        linear-gradient(125deg, color-mix(in srgb, var(--cyan) 12%, transparent), transparent 35%),
+        linear-gradient(305deg, color-mix(in srgb, var(--magenta) 9%, transparent), transparent 38%),
+        linear-gradient(20deg, color-mix(in srgb, var(--green) 7%, transparent), transparent 42%),
+        var(--bg);
+      background-attachment: fixed;
+    }
+
+    html[data-style="glass"] body::before {
+      background-image:
+        linear-gradient(115deg, transparent 15%, color-mix(in srgb, #ffffff 6%, transparent) 38%, transparent 62%),
+        linear-gradient(color-mix(in srgb, var(--cyan) 4%, transparent) 1px, transparent 1px),
+        linear-gradient(90deg, color-mix(in srgb, var(--cyan) 4%, transparent) 1px, transparent 1px);
+      background-size: 100% 100%, 52px 52px, 52px 52px;
+      mask-image: linear-gradient(to bottom, #000, transparent 88%);
+      opacity: 0.85;
+    }
+
+    html[data-style="glass"] body::after {
+      background: linear-gradient(100deg, transparent 0 42%, color-mix(in srgb, #ffffff 5%, transparent) 50%, transparent 58% 100%);
+      mix-blend-mode: soft-light;
+      opacity: 0.8;
+      animation: liquidLight 14s ease-in-out infinite alternate;
+    }
+
+    @keyframes liquidLight {
+      from { transform: translateX(-16%); }
+      to { transform: translateX(16%); }
+    }
+
+    html[data-style="glass"] .topbar {
+      border-bottom-color: var(--glass-line);
+      background: color-mix(in srgb, var(--bg) 52%, transparent);
+      backdrop-filter: blur(30px) saturate(175%);
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.12), inset 0 -1px 0 color-mix(in srgb, var(--cyan) 14%, transparent);
+    }
+
+    html[data-style="glass"] .brand h1 {
+      color: var(--fg);
+      font-family: 'Segoe UI Variable Display', 'Segoe UI', sans-serif;
+      font-weight: 650;
+      letter-spacing: 0.08em;
+      text-shadow: none;
+    }
+
+    html[data-style="glass"] .brand-meta { font-family: var(--mono); letter-spacing: 0.12em; }
+    html[data-style="glass"] .brand-meta::after { display: none; }
+
+    html[data-style="glass"] .signal {
+      position: relative;
+      overflow: hidden;
+      border-color: var(--glass-line);
+      background:
+        linear-gradient(145deg, color-mix(in srgb, #ffffff 28%, transparent), transparent 42%),
+        linear-gradient(135deg, color-mix(in srgb, var(--cyan) 55%, transparent), color-mix(in srgb, var(--magenta) 34%, transparent));
+      color: #ffffff;
+      box-shadow: 0 10px 26px color-mix(in srgb, var(--cyan) 24%, transparent), inset 0 1px 1px rgba(255, 255, 255, 0.45);
+      border-radius: 8px;
+    }
+
+    html[data-style="glass"] .signal::after {
+      content: '';
+      position: absolute;
+      width: 60%; height: 140%;
+      left: -65%; top: -20%;
+      transform: rotate(18deg);
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5), transparent);
+      animation: glassSweep 5s ease-in-out infinite;
+    }
+
+    @keyframes glassSweep {
+      0%, 55% { left: -65%; }
+      85%, 100% { left: 110%; }
+    }
+
+    html[data-style="glass"] .control,
+    html[data-style="glass"] input,
+    html[data-style="glass"] select,
+    html[data-style="glass"] .button,
+    html[data-style="glass"] .toggle-row {
+      border-color: var(--glass-line);
+      background: linear-gradient(145deg, color-mix(in srgb, #ffffff 10%, transparent), transparent), var(--input-bg);
+      backdrop-filter: blur(18px) saturate(150%);
+      box-shadow: inset 0 1px 0 color-mix(in srgb, #ffffff 20%, transparent), 0 6px 18px rgba(0, 0, 0, 0.09);
+    }
+
+    html[data-style="glass"] .button {
+      color: var(--fg);
+      font-family: 'Segoe UI Variable', 'Segoe UI', sans-serif;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: none;
+      transition: transform 180ms ease, border-color 180ms ease, background 180ms ease, box-shadow 180ms ease;
+    }
+
+    html[data-style="glass"] .button:not(.secondary) {
+      color: #ffffff;
+      border-color: color-mix(in srgb, var(--cyan) 52%, var(--glass-line));
+      background:
+        linear-gradient(145deg, rgba(255, 255, 255, 0.24), transparent 44%),
+        linear-gradient(120deg, color-mix(in srgb, var(--cyan) 72%, #08738a), color-mix(in srgb, var(--magenta) 38%, #08738a));
+    }
+
+    html[data-style="glass"] .button:hover {
+      filter: none;
+      transform: translateY(-1px);
+      border-color: color-mix(in srgb, var(--cyan) 56%, var(--glass-line));
+      box-shadow: inset 0 1px 0 color-mix(in srgb, #ffffff 34%, transparent), 0 10px 28px color-mix(in srgb, var(--cyan) 16%, transparent);
+    }
+
+    html[data-style="glass"] .overview {
+      gap: 10px;
+      border: 0;
+      background: transparent;
+      overflow: visible;
+      box-shadow: none;
+    }
+
+    html[data-style="glass"] .overview::before { display: none; }
+
+    html[data-style="glass"] .metric {
+      min-height: 112px;
+      border: 1px solid var(--glass-line) !important;
+      border-radius: 8px;
+      background:
+        linear-gradient(145deg, color-mix(in srgb, #ffffff 16%, transparent), transparent 42%),
+        var(--glass);
+      backdrop-filter: blur(24px) saturate(160%);
+      box-shadow: var(--glass-shadow);
+      overflow: hidden;
+    }
+
+    html[data-style="glass"] .metric::before {
+      left: auto; top: -32px; right: -22px;
+      width: 96px; height: 72px;
+      border-radius: 50%;
+      background: color-mix(in srgb, var(--cyan) 20%, transparent);
+      filter: blur(22px);
+      box-shadow: none;
+    }
+
+    html[data-style="glass"] .metric-label { letter-spacing: 0.08em; text-transform: none; }
+    html[data-style="glass"] .metric-value { color: var(--fg); font-family: 'Segoe UI Variable Display', 'Segoe UI', sans-serif; font-size: 30px; text-shadow: none; }
+
+    html[data-style="glass"] .section-head::after {
+      background: linear-gradient(90deg, var(--glass-line), color-mix(in srgb, var(--cyan) 34%, transparent), transparent);
+    }
+
+    html[data-style="glass"] .section-title h2 {
+      font-family: 'Segoe UI Variable Display', 'Segoe UI', sans-serif;
+      font-size: 16px;
+      letter-spacing: 0.04em;
+      text-transform: none;
+    }
+
+    html[data-style="glass"] .section-title h2::before { content: ''; }
+    html[data-style="glass"] .compact label,
+    html[data-style="glass"] .field label { letter-spacing: 0.08em; text-transform: none; }
+
+    html[data-style="glass"] .settings-info,
+    html[data-style="glass"] .protocol-note {
+      border: 1px solid var(--glass-line);
+      border-left: 1px solid color-mix(in srgb, var(--magenta) 48%, var(--glass-line));
+      border-radius: 8px;
+      background: var(--glass);
+      backdrop-filter: blur(20px) saturate(150%);
+      box-shadow: inset 0 1px 0 color-mix(in srgb, #ffffff 16%, transparent);
+    }
+
+    html[data-style="glass"] .plans {
+      border-color: var(--glass-line);
+      border-radius: 8px;
+      background:
+        linear-gradient(145deg, color-mix(in srgb, #ffffff 11%, transparent), transparent 34%),
+        var(--glass);
+      backdrop-filter: blur(28px) saturate(160%);
+      box-shadow: var(--glass-shadow);
+    }
+
+    html[data-style="glass"] .plan-head {
+      border-bottom-color: var(--glass-line);
+      background: color-mix(in srgb, var(--glass-strong) 72%, transparent);
+      font-family: 'Segoe UI Variable', 'Segoe UI', sans-serif;
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: none;
+    }
+
+    html[data-style="glass"] .plan { border-bottom-color: var(--glass-line); transition: background 180ms ease, transform 180ms ease; }
+    html[data-style="glass"] .plan::before { width: 3px; background: linear-gradient(var(--cyan), var(--magenta)); }
+    html[data-style="glass"] .plan:hover { background: color-mix(in srgb, var(--cyan) 7%, transparent); }
+    html[data-style="glass"] .plan-name { font-family: 'Segoe UI Variable', 'Segoe UI', sans-serif; font-size: 14px; }
+    html[data-style="glass"] .plan-provider { letter-spacing: 0.08em; }
+    html[data-style="glass"] .usage-value { color: var(--fg); font-family: 'Segoe UI Variable', 'Segoe UI', sans-serif; text-shadow: none; }
+
+    html[data-style="glass"] .protocol,
+    html[data-style="glass"] .capability,
+    html[data-style="glass"] .quota-bar {
+      border-color: var(--glass-line);
+      background: color-mix(in srgb, var(--glass-strong) 72%, transparent);
+      backdrop-filter: blur(12px);
+      box-shadow: inset 0 1px 0 color-mix(in srgb, #ffffff 14%, transparent);
+    }
+
+    html[data-style="glass"] .protocol { color: var(--fg); letter-spacing: 0.06em; }
+
+    html[data-style="glass"] dialog {
+      border-color: var(--glass-line);
+      border-radius: 8px;
+      background:
+        linear-gradient(145deg, color-mix(in srgb, #ffffff 15%, transparent), transparent 32%),
+        color-mix(in srgb, var(--surface-2) 82%, transparent);
+      backdrop-filter: blur(34px) saturate(170%);
+      box-shadow: 0 32px 100px rgba(0, 0, 0, 0.42), inset 0 1px 0 color-mix(in srgb, #ffffff 24%, transparent);
+    }
+
+    html[data-style="glass"] dialog::backdrop { background: color-mix(in srgb, var(--bg) 58%, transparent); backdrop-filter: blur(10px); }
+    html[data-style="glass"] .dialog-head { border-bottom-color: var(--glass-line); background: color-mix(in srgb, var(--glass-strong) 52%, transparent); }
+    html[data-style="glass"] .dialog-head h2 { color: var(--fg); font-family: 'Segoe UI Variable Display', 'Segoe UI', sans-serif; letter-spacing: 0.06em; text-transform: none; text-shadow: none; }
+    html[data-style="glass"] .dialog-head h2::before { content: ''; }
+    html[data-style="glass"] .model-list { border-color: var(--glass-line); background: var(--input-bg); backdrop-filter: blur(18px); }
+    html[data-style="glass"] .toast { border-color: var(--glass-line); background: var(--notice-bg); backdrop-filter: blur(24px) saturate(160%); box-shadow: var(--glass-shadow); }
+
     @media (max-width: 960px) {
+      .live { display: none; }
       .overview { grid-template-columns: 1fr 1fr; }
       .metric:nth-child(2) { border-right: 0; }
       .metric:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
@@ -805,8 +1074,9 @@ export function dashboardView(webview: vscode.Webview, version: string): string 
     }
 
     @media (max-width: 520px) {
+      .topbar { height: 60px; }
       .topbar-inner { padding: 0 12px; }
-      .live { display: none; }
+      .brand-copy, #addLabel { display: none; }
       .layout { padding: 16px 12px 44px; }
       .overview { grid-template-columns: 1fr 1fr; }
       .metric { padding: 14px 12px; min-height: 80px; }
@@ -817,7 +1087,8 @@ export function dashboardView(webview: vscode.Webview, version: string): string 
       .key-note { display: block; }
       .fetch-row { align-items: flex-start; flex-direction: column; }
       .toolbar { gap: 7px; }
-      .brand-meta { display: none; }
+      .language-select { width: 72px; }
+      .style-select { width: 104px; }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -838,6 +1109,10 @@ export function dashboardView(webview: vscode.Webview, version: string): string 
         </div>
         <div class="toolbar">
           <div class="live"><span class="live-dot"></span>EXT_ONLINE</div>
+          <select id="dashboardStyle" class="control style-select" aria-label="界面风格">
+            <option value="glass">Liquid Glass</option>
+            <option value="cyber">Cyber Pixel</option>
+          </select>
           <select id="language" class="control language-select" aria-label="界面语言">
             <option value="zh-CN">中文</option>
             <option value="en">EN</option>
@@ -990,6 +1265,7 @@ export function dashboardView(webview: vscode.Webview, version: string): string 
     const translations = {
       'zh-CN': {
         language: '界面语言', themeLight: '切换到白天模式', themeDark: '切换到暗黑模式', newPlan: '新建 Plan',
+        style: '界面风格', styleGlass: '液态玻璃', styleCyber: '赛博像素',
         metricsLabel: '最近 30 天统计',
         connectionTitle: '连接管理', connectionSubtitle: '供应商 / 协议 / 模型 / 官方配额', statusBar: '状态栏', source: '来源',
         statusOff: '[ OFF ] 不显示用量', statusTokens: '[ TOK ] 本地 Token', statusQuota: '[ QTA ] 官方配额',
@@ -1011,6 +1287,7 @@ export function dashboardView(webview: vscode.Webview, version: string): string 
       },
       en: {
         language: 'Interface language', themeLight: 'Switch to light mode', themeDark: 'Switch to dark mode', newPlan: 'New Plan',
+        style: 'Interface style', styleGlass: 'Liquid Glass', styleCyber: 'Cyber Pixel',
         metricsLabel: 'Statistics for the last 30 days',
         connectionTitle: 'Connection Manager', connectionSubtitle: 'Provider / Protocol / Models / Official quota', statusBar: 'Status bar', source: 'Source',
         statusOff: '[ OFF ] Hide usage', statusTokens: '[ TOK ] Local tokens', statusQuota: '[ QTA ] Official quota',
@@ -1036,7 +1313,7 @@ export function dashboardView(webview: vscode.Webview, version: string): string 
       edit: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg>',
       trash: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2m3 0-1 14H6L5 6M10 11v5M14 11v5"/></svg>'
     };
-    let state = { plans: [], planAvailability: {}, usage: [], quotas: [], settings: { statusBarUsage: 'off', dashboardTheme: 'system', language: 'zh-CN' } };
+    let state = { plans: [], planAvailability: {}, usage: [], quotas: [], settings: { statusBarUsage: 'off', dashboardTheme: 'system', dashboardStyle: 'glass', language: 'zh-CN' } };
     let testRequest = 0, tested, editingEnabled = true;
     let selectedModelIds = new Set();
     const $ = id => document.getElementById(id);
@@ -1053,8 +1330,16 @@ export function dashboardView(webview: vscode.Webview, version: string): string 
       $('themeToggle').title = resolved === 'dark' ? t('themeLight') : t('themeDark');
       $('themeToggle').ariaLabel = $('themeToggle').title;
     }
+    function applyStyle(style) {
+      const resolved = style === 'cyber' ? 'cyber' : 'glass';
+      document.documentElement.dataset.style = resolved;
+      $('dashboardStyle').value = resolved;
+    }
     function applyLanguage() {
       document.documentElement.lang = language();
+      $('dashboardStyle').ariaLabel = t('style');
+      $('dashboardStyle').options[0].textContent = t('styleGlass');
+      $('dashboardStyle').options[1].textContent = t('styleCyber');
       $('language').value = language();
       $('language').ariaLabel = t('language');
       $('metrics').ariaLabel = t('metricsLabel');
@@ -1122,6 +1407,7 @@ export function dashboardView(webview: vscode.Webview, version: string): string 
           statusBarPlanId: $('statusPlan').value || undefined,
           filterAvailable: $('filterAvailable').checked,
           dashboardTheme: state.settings.dashboardTheme || 'system',
+          dashboardStyle: state.settings.dashboardStyle || 'glass',
           language: language(),
         }
       });
@@ -1149,6 +1435,7 @@ export function dashboardView(webview: vscode.Webview, version: string): string 
       $('filterAvailable').checked = filterAvailable;
       $('filterAvailableRow').classList.toggle('on', filterAvailable);
       $('filterHint').hidden = !filterAvailable;
+      applyStyle(state.settings.dashboardStyle || 'glass');
       applyTheme(state.settings.dashboardTheme || 'system');
       $('plans').innerHTML = state.plans.length ? state.plans.map(plan => {
         const usage = state.usage.find(item => item.planId === plan.id) || {};
@@ -1269,6 +1556,11 @@ export function dashboardView(webview: vscode.Webview, version: string): string 
     $('close').onclick = $('cancel').onclick = () => $('editor').close();
     $('statusMode').onchange = () => { $('statusPlanField').hidden = $('statusMode').value !== 'quota'; saveStatus(); };
     $('statusPlan').onchange = saveStatus;
+    $('dashboardStyle').onchange = () => {
+      state.settings.dashboardStyle = $('dashboardStyle').value;
+      applyStyle(state.settings.dashboardStyle);
+      saveStatus();
+    };
     $('language').onchange = () => {
       state.settings.language = $('language').value;
       render();

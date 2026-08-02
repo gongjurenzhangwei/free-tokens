@@ -79,5 +79,6 @@ export interface DashboardSettings {
   /** 仅显示已启用、已选择模型且已配置 API Key 的 Plan */
   filterAvailable?: boolean;
   dashboardTheme?: 'system' | 'dark' | 'light';
+  dashboardStyle?: 'glass' | 'cyber';
   language?: 'zh-CN' | 'en';
 }

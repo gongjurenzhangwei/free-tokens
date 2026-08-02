@@ -8,7 +8,7 @@
 - 内置 Agnes AI、MiniMax、OpenCode Zen、NVIDIA NIM、OpenAI、Anthropic、DeepSeek、Qwen、Moonshot、智谱、SiliconFlow、OpenRouter、Groq、Mistral、Together AI、xAI 预设。
 - 支持任意 Coding Plan 或自建网关的 Base URL。
 - 智能识别服务根地址、`/v1` 地址和完整 API endpoint，保存后自动尝试兼容的 `/models` 地址。
-- 配置界面可手动获取模型，以纵向列表展示供应商返回的上下文长度、视觉、Tools、联网等能力，并选择要启用的模型。
+- 配置界面可手动获取模型，以纵向列表展示供应商返回的上下文长度、视觉、Tools、联网等能力，并选择要启用的模型；连接测试失败时仍可手动添加模型 ID 与上下文长度。
 - 模型注册到 VS Code Chat 的模型选择器，并支持流式文本和工具调用。
 - API Key 仅保存在 VS Code SecretStorage，不写入设置或工作区文件。
 - 按 Plan 汇总最近 30 天请求数、输入 Token、输出 Token、总 Token 和失败次数。

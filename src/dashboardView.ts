@@ -693,9 +693,9 @@ export function dashboardView(webview: vscode.Webview, version: string): string 
 
     .fetch-row {
       display: flex;
-      flex-direction: row;
-      align-items: center;
-      gap: 14px;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
       padding-top: 4px;
     }
 
@@ -757,6 +757,52 @@ export function dashboardView(webview: vscode.Webview, version: string): string 
     }
 
     .empty-models { padding: 22px; text-align: center; color: var(--muted); font-family: var(--mono); }
+
+    .custom-model-form {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 130px auto;
+      gap: 8px;
+      align-items: end;
+      padding: 12px;
+      margin-top: 10px;
+      border: 1px dashed var(--line);
+      border-radius: var(--radius);
+      background: color-mix(in srgb, var(--cyan) 4%, transparent);
+    }
+    .custom-model-form .compact { margin: 0; }
+    .custom-model-form .compact label { font-size: 9px; }
+    .custom-model-form .custom-add { white-space: nowrap; min-height: 34px; align-self: end; }
+    .custom-model-form .custom-error { grid-column: 1 / -1; color: var(--magenta); font: 500 10px var(--mono); letter-spacing: 0.06em; min-height: 14px; }
+
+    .custom-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 10px;
+    }
+    .custom-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border: 1px solid var(--line);
+      border-left: 3px solid var(--magenta);
+      border-radius: var(--radius);
+      background: color-mix(in srgb, var(--magenta) 4%, transparent);
+    }
+    .custom-item-name {
+      flex: 1 1 auto;
+      font: 500 12px var(--mono);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .custom-remove { min-height: 28px; padding: 3px 10px; font-size: 10px; }
+
+    @media (max-width: 720px) {
+      .custom-model-form { grid-template-columns: 1fr 1fr; }
+      .custom-model-form .custom-add { grid-column: 1 / -1; }
+    }
 
     .dialog-actions {
       grid-column: 1 / -1;
@@ -1233,6 +1279,42 @@ export function dashboardView(webview: vscode.Webview, version: string): string 
       <div class="field wide">
         <div id="modelPreview" class="model-list" hidden></div>
       </div>
+      <div class="field wide">
+        <div class="key-note">
+          <span class="hint" id="customAddHint">无法连接测试时，可手动添加模型 ID。已添加的模型会自动勾选。</span>
+        </div>
+        <div id="customModelForm" class="custom-model-form" hidden>
+          <div class="compact">
+            <label for="customModelId">MODEL_ID</label>
+            <input id="customModelId" type="text" autocomplete="off" placeholder="例如：gpt-5-mini">
+          </div>
+          <div class="compact">
+            <label for="customModelName">名称（可留空）</label>
+            <input id="customModelName" type="text" autocomplete="off" placeholder="默认使用 MODEL_ID">
+          </div>
+          <div class="compact">
+            <label for="customModelContext">上下文长度</label>
+            <input id="customModelContext" type="number" min="1" step="1" placeholder="例如：128000">
+          </div>
+          <button type="button" class="button custom-add" id="addCustomModel">添加模型</button>
+          <div class="custom-error" id="customModelError" role="alert" aria-live="polite"></div>
+          <div class="compact" style="grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 12px;">
+            <label class="toggle-row" style="font-size:11px;letter-spacing:0.08em;text-transform:none;color:var(--muted)">
+              <input type="checkbox" id="customModelVision" checked>
+              <span>支持视觉</span>
+            </label>
+            <label class="toggle-row" style="font-size:11px;letter-spacing:0.08em;text-transform:none;color:var(--muted)">
+              <input type="checkbox" id="customModelTools" checked>
+              <span>支持工具调用</span>
+            </label>
+            <label class="toggle-row" style="font-size:11px;letter-spacing:0.08em;text-transform:none;color:var(--muted)">
+              <input type="checkbox" id="customModelWeb">
+              <span>支持联网</span>
+            </label>
+          </div>
+        </div>
+        <div id="customModelList" class="custom-list" hidden></div>
+      </div>
       <div class="dialog-actions">
         <button type="button" class="button secondary" id="cancel">取消</button>
         <button type="submit" class="button" id="save" disabled>保存 Plan</button>
@@ -1277,6 +1359,12 @@ export function dashboardView(webview: vscode.Webview, version: string): string 
         planNamePlaceholder: '例如：MiniMax Coding', keyHint: '仅保存在 VS Code SecretStorage', keyPlaceholder: '编辑留空 = 保留原密钥',
         testFetch: '测试并获取', fillThenTest: '填写连接信息后测试。', cancel: '取消', savePlan: '保存 Plan', searchModels: '搜索模型',
         selectAll: '全选', clearAll: '清空', noMatch: '// 无匹配模型', configChanged: '配置已变化，请重新测试连接。',
+        customAddHint: '无法连接测试时，可手动添加模型 ID。已添加的模型会自动勾选。',
+        customModelId: 'MODEL_ID', customModelName: '名称（可留空）', customModelContext: '上下文长度',
+        customModelVision: '支持视觉', customModelTools: '支持工具调用', customModelWeb: '支持联网',
+        customAddButton: '添加模型', customRemove: '移除',
+        customErrorRequired: '请填写模型 ID。', customErrorDuplicate: '该模型 ID 已被当前 Plan 使用。',
+        customBadge: 'CUSTOM',
         selectedModels: count => '当前已选择 ' + count + ' 个模型。', invalidConnection: '请填写有效的 Base URL 和 API Key。',
         testing: protocol => '正在使用 ' + protocol + ' 测试连接...', connected: (protocol, count) => '连接成功 · ' + protocol + ' · ' + count + ' 个模型',
         enabledPlans: '启用的 Plan', apiCalls: 'API 调用', inputTokens: '输入 Token', outputTokens: '输出 Token', units: '个', count: '次',
@@ -1299,6 +1387,12 @@ export function dashboardView(webview: vscode.Webview, version: string): string 
         planNamePlaceholder: 'Example: MiniMax Coding', keyHint: 'Stored only in VS Code SecretStorage', keyPlaceholder: 'Leave blank while editing to keep the current key',
         testFetch: 'Test & Fetch', fillThenTest: 'Enter connection details, then test.', cancel: 'Cancel', savePlan: 'Save Plan', searchModels: 'Search models',
         selectAll: 'Select All', clearAll: 'Clear All', noMatch: '// NO MATCH', configChanged: 'Configuration changed. Test the connection again.',
+        customAddHint: 'If the connection test fails, add model IDs manually. They will be auto-selected.',
+        customModelId: 'MODEL_ID', customModelName: 'Name (optional)', customModelContext: 'Context length',
+        customModelVision: 'Vision', customModelTools: 'Tools', customModelWeb: 'Web search',
+        customAddButton: 'Add model', customRemove: 'Remove',
+        customErrorRequired: 'Enter a model ID.', customErrorDuplicate: 'This model ID is already in use by the current plan.',
+        customBadge: 'CUSTOM',
         selectedModels: count => count + ' model(s) currently selected.', invalidConnection: 'Enter a valid Base URL and API key.',
         testing: protocol => 'Testing connection with ' + protocol + '...', connected: (protocol, count) => 'Connected · ' + protocol + ' · ' + count + ' model(s)',
         enabledPlans: 'Enabled plans', apiCalls: 'API calls', inputTokens: 'Input tokens', outputTokens: 'Output tokens', units: 'units', count: 'calls',
@@ -1372,6 +1466,17 @@ export function dashboardView(webview: vscode.Webview, version: string): string 
       $('modelSearch').ariaLabel = t('searchModels');
       $('selectAllModels').textContent = t('selectAll');
       $('clearAllModels').textContent = t('clearAll');
+      const customLabels = $('customModelForm').querySelectorAll('label');
+      if (customLabels[0]) customLabels[0].textContent = t('customModelId');
+      if (customLabels[1]) customLabels[1].textContent = t('customModelName');
+      if (customLabels[2]) customLabels[2].textContent = t('customModelContext');
+      $('addCustomModel').textContent = t('customAddButton');
+      $('customAddHint').textContent = t('customAddHint');
+      const customToggles = $('customModelForm').querySelectorAll('.toggle-row span');
+      if (customToggles[0]) customToggles[0].textContent = t('customModelVision');
+      if (customToggles[1]) customToggles[1].textContent = t('customModelTools');
+      if (customToggles[2]) customToggles[2].textContent = t('customModelWeb');
+      renderCustomModels();
     }
     function pixelBar(percent, width) {
       width = width || 14;
@@ -1502,10 +1607,12 @@ export function dashboardView(webview: vscode.Webview, version: string): string 
       const visible = visibleModels(models);
       $('modelTools').hidden = !models.length;
       $('modelPreview').hidden = !models.length;
+      $('customModelForm').hidden = false;
       $('modelCount').textContent = visible.length + ' / ' + models.length + ' ' + t('models');
       $('selectAllModels').disabled = !visible.length;
       $('clearAllModels').disabled = !visible.length;
       $('modelPreview').innerHTML = visible.length ? visible.map(model => '<label class="model-option"><input type="checkbox" data-model-id="' + esc(model.id) + '" ' + (selectedModelIds.has(model.id) ? 'checked' : '') + '><span class="model-copy"><span class="model-title">' + esc(model.name) + '</span><span class="capabilities">' + capabilityLabels(model).map(label => '<span class="capability">' + esc(label) + '</span>').join('') + '</span></span></label>').join('') : '<div class="empty-models">' + t('noMatch') + '</div>';
+      renderCustomModels();
     }
     function updateProtocolNote() { $('protocolNote').textContent = t($('protocol').value === 'responses' ? 'protocolResponses' : $('protocol').value === 'anthropic' ? 'protocolAnthropic' : 'protocolOpenai'); }
     function invalidateModels() {
@@ -1518,12 +1625,22 @@ export function dashboardView(webview: vscode.Webview, version: string): string 
       $('modelSearch').value = '';
       $('modelPreview').hidden = true;
       $('modelPreview').textContent = '';
+      $('customModelForm').hidden = true;
+      $('customModelList').hidden = true;
+      $('customModelList').innerHTML = '';
       $('connectionStatus').textContent = t('configChanged');
     }
     function openEditor(plan) {
       testRequest++;
       $('form').reset();
       $('modelSearch').value = '';
+      $('customModelId').value = '';
+      $('customModelName').value = '';
+      $('customModelContext').value = '';
+      $('customModelVision').checked = true;
+      $('customModelTools').checked = true;
+      $('customModelWeb').checked = false;
+      $('customModelError').textContent = '';
       editingEnabled = plan?.enabled ?? true;
       $('id').value = plan?.id || '';
       $('name').value = plan?.name || '';
@@ -1535,11 +1652,15 @@ export function dashboardView(webview: vscode.Webview, version: string): string 
         tested = { protocol: plan.protocol, models: plan.models };
         selectedModelIds = new Set(plan.models.map(model => model.id));
         renderModelChoices(plan.models);
+        $('customModelForm').hidden = false;
       } else {
         $('preset').value = 'custom';
         $('modelTools').hidden = true;
         $('modelPreview').hidden = true;
         $('modelPreview').textContent = '';
+        $('customModelForm').hidden = true;
+        $('customModelList').hidden = true;
+        $('customModelList').innerHTML = '';
         tested = undefined;
         selectedModelIds.clear();
       }
@@ -1551,6 +1672,60 @@ export function dashboardView(webview: vscode.Webview, version: string): string 
       $('editor').showModal();
     }
     $('modelPreview').insertAdjacentHTML('beforebegin', '<div id="modelTools" class="model-tools" hidden><label class="sr-only" for="modelSearch">搜索模型</label><input id="modelSearch" type="search" autocomplete="off" placeholder="search.id / name / capability"><span id="modelCount" class="model-count" aria-live="polite"></span><button type="button" class="button secondary" id="selectAllModels">Select_All</button><button type="button" class="button secondary" id="clearAllModels">Clear_All</button></div>');
+    function renderCustomModels() {
+      const customs = (tested?.models || []).filter(model => model.custom);
+      $('customModelList').hidden = !customs.length;
+      $('customModelList').innerHTML = customs.length
+        ? customs.map(model => '<div class="custom-item"><span class="capability" style="color:var(--magenta);border-color:color-mix(in srgb,var(--magenta) 50%,var(--line))">' + t('customBadge') + '</span><span class="custom-item-name" title="' + esc(model.id) + '">' + esc(model.name) + '</span><button type="button" class="button secondary custom-remove" data-remove-model="' + esc(model.id) + '">' + t('customRemove') + '</button></div>').join('')
+        : '';
+    }
+    function addCustomModel() {
+      const idInput = $('customModelId');
+      const id = idInput.value.trim();
+      const error = $('customModelError');
+      error.textContent = '';
+      if (!id) { error.textContent = t('customErrorRequired'); idInput.focus(); return; }
+      const existing = (tested?.models || []).some(model => model.id === id);
+      if (existing) { error.textContent = t('customErrorDuplicate'); idInput.focus(); return; }
+      const contextLength = Number($('customModelContext').value) || undefined;
+      const vision = $('customModelVision').checked;
+      const tools = $('customModelTools').checked;
+      const web = $('customModelWeb').checked;
+      const name = $('customModelName').value.trim() || id;
+      const model = {
+        id,
+        name,
+        maxInputTokens: contextLength || 8192,
+        maxOutputTokens: contextLength ? Math.max(1024, Math.floor(contextLength / 4)) : 4096,
+        toolCalling: tools,
+        vision,
+        contextLength,
+        supportsTools: tools,
+        supportsVision: vision,
+        supportsWebSearch: web,
+        features: web ? ['web_search'] : [],
+        custom: true
+      };
+      tested = tested ? { ...tested, models: [...tested.models, model] } : { protocol: $('protocol').value, models: [model] };
+      selectedModelIds.add(id);
+      idInput.value = '';
+      $('customModelName').value = '';
+      $('customModelContext').value = '';
+      $('customModelVision').checked = true;
+      $('customModelTools').checked = true;
+      $('customModelWeb').checked = false;
+      $('connectionStatus').textContent = t('connected', protocolNames[tested.protocol], tested.models.length);
+      renderModelChoices(tested.models);
+      $('save').disabled = !selectedModelIds.size;
+    }
+    function removeCustomModel(id) {
+      if (!tested) return;
+      tested = { ...tested, models: tested.models.filter(model => model.id !== id) };
+      selectedModelIds.delete(id);
+      $('connectionStatus').textContent = t('connected', protocolNames[tested.protocol], tested.models.length);
+      renderModelChoices(tested.models);
+      $('save').disabled = !selectedModelIds.size;
+    }
     new MutationObserver(() => document.querySelectorAll('[data-refresh]').forEach(button => button.remove())).observe($('plans'), { childList: true, subtree: true });
     $('add').onclick = () => openEditor();
     $('close').onclick = $('cancel').onclick = () => $('editor').close();
@@ -1622,6 +1797,12 @@ export function dashboardView(webview: vscode.Webview, version: string): string 
       else selectedModelIds.delete(event.target.dataset.modelId);
       $('save').disabled = !selectedModelIds.size;
     };
+    $('addCustomModel').onclick = addCustomModel;
+    $('customModelList').onclick = event => {
+      const button = event.target.closest('[data-remove-model]');
+      if (!button) return;
+      removeCustomModel(button.dataset.removeModel);
+    };
     $('form').onsubmit = event => {
       event.preventDefault();
       if (!tested) return;
@@ -1655,6 +1836,9 @@ export function dashboardView(webview: vscode.Webview, version: string): string 
           selectedModelIds.clear();
           $('modelTools').hidden = true;
           $('modelPreview').hidden = true;
+          $('customModelForm').hidden = false;
+          $('customModelList').hidden = true;
+          $('customModelList').innerHTML = '';
           $('connectionStatus').textContent = event.data.error;
           $('save').disabled = true;
         }

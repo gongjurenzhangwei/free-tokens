@@ -1,0 +1,52 @@
+{
+  "name": "byok-copilot",
+  "displayName": "BYOK COPILOT",
+  "description": "Connect token plans, coding plans, and custom model endpoints to VS Code Copilot Chat.",
+  "version": "0.1.13",
+  "publisher": "byok-copilot",
+  "license": "UNLICENSED",
+  "engines": {
+    "vscode": "^1.104.0"
+  },
+  "categories": [
+    "AI",
+    "Chat"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "byokCopilot.openDashboard",
+        "title": "BYOK COPILOT: Open Dashboard"
+      },
+      {
+        "command": "byokCopilot.manageLanguageModels",
+        "title": "BYOK COPILOT: Manage Language Models"
+      }
+    ],
+    "languageModelChatProviders": [
+      {
+        "vendor": "byok-copilot",
+        "displayName": "BYOK COPILOT"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run package",
+    "check": "tsc --noEmit",
+    "compile": "esbuild src/extension.ts --bundle --platform=node --format=cjs --external:vscode --outfile=dist/extension.js --sourcemap",
+    "package": "npm run check && npm run compile",
+    "package:vsix": "npm run package && vsce package --allow-missing-repository --skip-license",
+    "watch": "npm run compile -- --watch"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "@types/vscode": "^1.104.0",
+    "@vscode/vsce": "^3.9.2",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.9.2"
+  }
+}

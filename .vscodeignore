@@ -9,3 +9,5 @@ node_modules/**
 dist/**/*.map
 postcss.config.js
 tailwind.config.js
+*.vsix
+preview-trend.html

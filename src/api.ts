@@ -216,11 +216,14 @@ async function probeProtocol(plan: PlanConfig, model: PlanModel, apiKey: string)
 export async function connectPlan(plan: PlanConfig, apiKey: string): Promise<PlanConnection> {
   const models = await discoverModels(plan, apiKey);
   const isNvidiaNim = (() => { try { return new URL(plan.baseUrl).host.toLowerCase().includes('integrate.api.nvidia.com'); } catch { return false; } })();
+  const isKiloGateway = (() => { try { return new URL(plan.baseUrl).host.toLowerCase().includes('api.kilo.ai'); } catch { return false; } })();
 
-  if (isNvidiaNim) {
-    /* NVIDIA NIM /v1/models 返回完整目录，而非仅账户已启用的模型。
-       逐一探测所有模型，仅保留实际可用的，避免用户看到无法调用的模型。 */
-    const concurrency = 6;
+  /* Providers like NVIDIA NIM and Kilo Gateway expose the entire model catalog
+     in /v1/models regardless of whether the account can actually use them. Probe
+     every returned model concurrently, drop the ones that return 402/404/403/429,
+     and only surface the models that the current account can call. */
+  if (isNvidiaNim || isKiloGateway) {
+    const concurrency = isKiloGateway ? 1 : 6;
     const verified: PlanModel[] = [];
     let index = 0;
     const workers = Array.from({ length: Math.min(concurrency, models.length) }, async () => {
@@ -229,7 +232,17 @@ export async function connectPlan(plan: PlanConfig, apiKey: string): Promise<Pla
         try {
           await probeProtocol(plan, model, apiKey);
           verified.push(model);
-        } catch { /* 模型未启用或不可用，跳过 */ }
+        } catch (error) {
+          /* Treat 402/403/404/429 as "this model is unavailable to my account
+             right now". 429 in particular is common on free/shared tiers with
+             rpm limits (e.g. cohere/north-mini-code:free 15 req/min) and should
+             not surface as a protocol-mismatch error.
+             Anything else (network, malformed payload, protocol mismatch)
+             bubbles up so the user sees the real problem. */
+          const meta = error && typeof error === 'object' ? error as { modelUnavailable?: boolean; rateLimited?: boolean } : undefined;
+          if (meta?.modelUnavailable || meta?.rateLimited) continue;
+          throw error;
+        }
       }
     });
     await Promise.all(workers);
@@ -237,9 +250,11 @@ export async function connectPlan(plan: PlanConfig, apiKey: string): Promise<Pla
       verified.sort((a, b) => a.name.localeCompare(b.name));
       return { protocol: plan.protocol, models: verified };
     }
+    const providerLabel = isNvidiaNim ? 'NVIDIA NIM' : 'Kilo Gateway';
+    const consoleUrl = isNvidiaNim ? 'build.nvidia.com → Models' : 'app.kilo.ai/profile';
     throw new Error(
-      `NVIDIA NIM 账户没有可用的模型。/v1/models 返回了 ${models.length} 个模型，但探测全部失败。\n` +
-      `请在 build.nvidia.com → Models 页面确认至少已启用一个模型，然后重新连接。`
+      `${providerLabel} 账户没有可用的模型。/v1/models 返回了 ${models.length} 个模型，但探测全部失败。\n` +
+      `请在 ${consoleUrl} 控制台确认账户至少启用了 / 有一个免费模型，然后再重新连接。`
     );
   }
 
@@ -269,9 +284,22 @@ async function requestFirst(plan: PlanConfig, apiKey: string, suffix: string, in
   const guidance = guidanceFor(plan.baseUrl, suffix);
   const modelMissing = /HTTP 404|: Not found for account|'.*': Not found|model_not_found/i.test(lastMessage);
   const paramRejected = /Unsupported parameter|HTTP 400/i.test(lastMessage);
+  const paidRequired = /HTTP 402|Paid Model|Credits Required|insufficient[_ ]credits|usage_limit_exceeded|balance/i.test(lastMessage);
+  const rateLimited = /HTTP 429|Rate limit exceeded|Too Many Requests|rate_limit/i.test(lastMessage);
   const reason = lastMessage.replace(/^https?:\/\/\S+:\s*/, '');
-  const headline = modelMissing ? `模型 ID 不存在或未分配给此账户` : paramRejected ? `供应商拒绝了请求参数` : `没有可用的 ${suffix} 端点`;
-  throw new Error(`${headline}：${reason}${guidance ? `\n${guidance}` : ''}`);
+  const headline = rateLimited
+    ? `共享档位被限速（HTTP 429）`
+    : paidRequired
+      ? `模型需要付费或账户余额不足`
+      : modelMissing
+        ? `模型 ID 不存在或未分配给此账户`
+        : paramRejected
+          ? `供应商拒绝了请求参数`
+          : `没有可用的 ${suffix} 端点`;
+  const error = new Error(`${headline}：${reason}${guidance ? `\n${guidance}` : ''}`) as Error & { modelUnavailable?: boolean; rateLimited?: boolean };
+  error.modelUnavailable = paidRequired || modelMissing;
+  error.rateLimited = rateLimited;
+  throw error;
 }
 
 function guidanceFor(baseUrl: string, suffix: string): string {

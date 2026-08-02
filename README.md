@@ -16,7 +16,6 @@
 - 状态栏可选择仅显示 `BYOK`、显示本地 Token 用量或显示最新官方配额。
 - Dashboard 已重构为 React + Tailwind 界面，使用可折叠侧栏组织概览、接入平台、模型、用量与配额、设置五个工作区；窄面板下自动切换为移动抽屉。
 - Dashboard 支持暗黑与白天模式，并会记住选择。
-- Dashboard 提供液态玻璃与赛博像素两种界面风格，可独立于明暗模式切换并记住选择。
 - Dashboard 菜单栏支持中文与英文即时切换，并同步本地化状态栏、悬浮用量面板和操作提示。
 - `Only Available` 只向聊天模型选择器提供已启用、已选模型且 SecretStorage 中存在 API Key 的 Plan；Dashboard 始终保留全部 Plan。
 - 使用 `Manage Models` 打开 VS Code 官方 Language Models 管理器，再用眼睛图标隐藏不需要的 GitHub Copilot 默认模型。

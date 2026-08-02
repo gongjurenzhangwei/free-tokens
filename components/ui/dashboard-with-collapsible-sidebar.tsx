@@ -50,8 +50,7 @@ const presets: Record<string, { provider: string; url: string; protocol: ApiProt
   groq: { provider: 'Groq', url: 'https://api.groq.com/openai', protocol: 'openai' },
   mistral: { provider: 'Mistral', url: 'https://api.mistral.ai', protocol: 'openai' },
   together: { provider: 'Together AI', url: 'https://api.together.xyz', protocol: 'openai' },
-  xai: { provider: 'xAI', url: 'https://api.x.ai', protocol: 'openai' },
-};
+  xai: { provider: 'xAI', url: 'https://api.x.ai', protocol: 'openai' },  kilo: { provider: 'Kilo Gateway', url: 'https://api.kilo.ai/api/gateway', protocol: 'openai' },};
 const protocolNames: Record<ApiProtocol, string> = {
   responses: 'Responses API', openai: 'Chat Completions', anthropic: 'Anthropic Messages',
 };
@@ -495,8 +494,10 @@ function ModelTrendChart({ series24h, series7d, series30d, allUsageRecords, lang
             <li key={item.id}>
               <i style={{ background: color }} />
               <span className="trend-name" title={item.provider ? `${item.provider} · ${item.name}` : item.name}>{item.name}</span>
-              <strong>{formatNumber(totalOf(item), language)}</strong>
-              <small>{mode === 'requests' ? text.trendRequests : text.trendTokens}</small>
+              <span className="trend-value">
+                <strong>{formatNumber(totalOf(item), language)}</strong>
+                <small>{mode === 'requests' ? text.trendRequests : text.trendTokens}</small>
+              </span>
             </li>
           );
         })}

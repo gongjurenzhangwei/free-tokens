@@ -23,12 +23,6 @@
     a { color: var(--cyan); text-decoration: none; }
     a:hover { text-decoration: underline; }
 
-    /* Page heading */
-    .ft-head { display: flex; gap: 12px; align-items: flex-start; margin: 0 0 18px; }
-    .ft-head-icon { color: var(--cyan); flex: 0 0 28px; }
-    .ft-head h1 { margin: 0; font-size: 16px; }
-    .ft-head p { margin: 4px 0 0; color: var(--muted); font: 500 13px var(--sans); }
-
     /* Card grid */
     .ft-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
     .ft-card { display: flex; flex-direction: column; gap: 12px; border: 1px solid var(--line); border-radius: 8px; padding: 16px; background: var(--surface-soft); transition: border-color .15s ease, transform .15s ease; }
@@ -52,21 +46,7 @@
   </style>
 </head>
 <body>
-  <section class="ft-wrap">
-    <header class="ft-head">
-      <svg class="ft-head-icon" xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <rect x="3" y="8" width="18" height="4" rx="1"></rect>
-        <path d="M12 8v13"></path>
-        <path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"></path>
-        <path d="M7.5 7a1 1 0 0 1 0-5A4.8 8 0 0 1 12 7a4.8 8 0 0 1 4.5-5 1 1 0 0 1 0 5"></path>
-      </svg>
-      <div>
-        <h1>免费 Token 推荐</h1>
-        <p>一些可以拿到免费 Token / 免费额度的供应商，注册即可使用。额度与限制请以官方页面为准。</p>
-      </div>
-    </header>
-
-    <div class="ft-grid">
+  <div class="ft-grid">
 
       <article class="ft-card">
         <header class="ft-card-head">
@@ -222,7 +202,19 @@
         <code class="ft-url">https://openrouter.ai</code>
       </article>
 
-    </div>
-  </section>
+  </div>
+  <script>
+    // Tell the host dashboard how tall this page is so the iframe can be
+    // sized to fit (works across origins via postMessage).
+    function reportHeight() {
+      var h = document.body.scrollHeight;
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: 'freeTokensHeight', height: h }, '*');
+      }
+    }
+    if (document.readyState === 'complete') reportHeight();
+    else window.addEventListener('load', reportHeight);
+    window.addEventListener('resize', reportHeight);
+  </script>
 </body>
 </html>

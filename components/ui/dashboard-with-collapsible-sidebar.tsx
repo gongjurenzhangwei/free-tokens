@@ -1101,6 +1101,22 @@ function FreeTokensView({ language, text }: { language: 'zh-CN' | 'en'; text: an
   const freeTokensUrl = (typeof document !== 'undefined'
     ? document.querySelector('meta[name="byok-freetokens-url"]')?.getAttribute('content') || ''
     : '');
+  const [frameHeight, setFrameHeight] = useState<number | null>(null);
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
+
+  // The hosted page posts its own height so the iframe can size itself to fit
+  // (no inner scrollbar). Works across origins via postMessage.
+  useEffect(() => {
+    const onMessage = (event: MessageEvent) => {
+      const data = event.data;
+      if (data && typeof data === 'object' && data.type === 'freeTokensHeight') {
+        const h = Number(data.height);
+        if (Number.isFinite(h) && h > 0) setFrameHeight(h);
+      }
+    };
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, []);
 
   if (!freeTokensUrl) {
     // Fallback: keep the same message in both languages so a missing host
@@ -1129,6 +1145,14 @@ function FreeTokensView({ language, text }: { language: 'zh-CN' | 'en'; text: an
           title={text.freetokensTitle}
           loading="lazy"
           referrerPolicy="no-referrer"
+          style={{ height: frameHeight ? frameHeight + 'px' : undefined }}
+          onLoad={() => {
+            // If the hosted page does not post its height (e.g. older cached copy),
+            // fall back to its scroll height when same-origin.
+            const doc = iframeRef.current?.contentDocument;
+            if (doc && doc.body) setFrameHeight(doc.body.scrollHeight);
+          }}
+          ref={iframeRef}
         />
       </section>
     </div>

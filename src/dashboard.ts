@@ -89,7 +89,7 @@ export class Dashboard {
   private freeTokensUrl(): string {
     const configured = vscode.workspace.getConfiguration('byokCopilot').get<string>('freeTokensUrl', '').trim();
     if (configured) return configured;
-    return 'https://raw.githubusercontent.com/gongjurenzhangwei/byok-copilot/HEAD/docs/free-tokens.html';
+    return 'https://raw.githubusercontent.com/gongjurenzhangwei/free-tokens/HEAD/docs/free-tokens.html';
   }
 
   open(): void {
@@ -274,7 +274,7 @@ export class Dashboard {
   }
 
   /** GitHub repository used for update checks (owner/repo). Matches the `git remote` in this repo. */
-  private static readonly UPDATE_REPO = 'gongjurenzhangwei/byok-copilot';
+  private static readonly UPDATE_REPO = 'gongjurenzhangwei/free-tokens';
 
   /**
    * Feishu (Lark) group-bot webhook, XOR+Base64 obfuscated so it never appears
@@ -333,7 +333,7 @@ export class Dashboard {
   private async checkUpdate(): Promise<void> {
     try {
       const response = await fetch(`https://api.github.com/repos/${Dashboard.UPDATE_REPO}/releases/latest`, {
-        headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'byok-copilot' },
+        headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'free-tokens' },
       });
       if (!response.ok) throw new Error(`GitHub API responded ${response.status}`);
       const release = await response.json() as { tag_name?: string; html_url?: string; name?: string };

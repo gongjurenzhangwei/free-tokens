@@ -337,20 +337,34 @@ export class Dashboard {
 
   private async checkUpdate(): Promise<void> {
     try {
-      // The repo is distributed as source (no GitHub Releases are published),
-      // so releases/latest 404s. Read the version from package.json on the
-      // default branch instead: raw.githubusercontent.com is not subject to the
-      // GitHub API rate limit and always reflects the latest pushed code.
-      const response = await fetch(`https://raw.githubusercontent.com/${Dashboard.UPDATE_REPO}/main/package.json`, {
-        headers: { 'User-Agent': 'free-tokens' },
+      // Prefer the latest GitHub Release (tag_name): this is where the official
+      // VSIX artifacts live, so the "open" action can point at the release page.
+      // Fall back to the default-branch package.json version when no release has
+      // been published yet (404) or when the unauthenticated API rate limit kicks
+      // in (403), keeping the check usable even without a release.
+      let latest = '';
+      let openUrl = `https://github.com/${Dashboard.UPDATE_REPO}`;
+      const releaseResponse = await fetch(`https://api.github.com/repos/${Dashboard.UPDATE_REPO}/releases/latest`, {
+        headers: { 'User-Agent': 'free-tokens', Accept: 'application/vnd.github+json' },
       });
-      if (!response.ok) throw new Error(`GitHub responded ${response.status}`);
-      const manifest = await response.json() as { version?: string };
-      const latest = (manifest.version || '').replace(/^v/, '');
+      if (releaseResponse.ok) {
+        const release = await releaseResponse.json() as { tag_name?: string };
+        latest = (release.tag_name || '').replace(/^v/, '');
+        openUrl = `https://github.com/${Dashboard.UPDATE_REPO}/releases/latest`;
+      } else if (releaseResponse.status === 404 || releaseResponse.status === 403) {
+        const response = await fetch(`https://raw.githubusercontent.com/${Dashboard.UPDATE_REPO}/main/package.json`, {
+          headers: { 'User-Agent': 'free-tokens' },
+        });
+        if (!response.ok) throw new Error(`GitHub responded ${response.status}`);
+        const manifest = await response.json() as { version?: string };
+        latest = (manifest.version || '').replace(/^v/, '');
+      } else {
+        throw new Error(`GitHub responded ${releaseResponse.status}`);
+      }
       const current = this.version.replace(/^v/, '');
       if (!latest) throw new Error(this.isEnglish ? 'No version found on the remote repository.' : '未能在远程仓库找到版本号。');
       if (compareVersions(latest, current) > 0) {
-        const action = this.isEnglish ? 'Open repository' : '打开仓库';
+        const action = this.isEnglish ? 'Open release' : '打开发布页';
         const picked = await vscode.window.showInformationMessage(
           this.isEnglish
             ? `A new version is available: v${latest} (current v${current}).`
@@ -358,7 +372,7 @@ export class Dashboard {
           action,
         );
         if (picked === action) {
-          await vscode.env.openExternal(vscode.Uri.parse(`https://github.com/${Dashboard.UPDATE_REPO}`));
+          await vscode.env.openExternal(vscode.Uri.parse(openUrl));
         }
         return;
       }

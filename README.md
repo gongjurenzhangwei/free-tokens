@@ -138,6 +138,20 @@ Base URL 可以是以下任意一种写法，扩展会自动处理：
 - 更新渠道列表需修改并推送 `docs/free-tokens.html` 后**重新发布扩展**；
 - 你仍可通过 VS Code 设置 `byokCopilot.freeTokensUrl` 覆盖为**自托管 CDN / 自建站点**的地址，覆盖后内容改由该地址提供（指向 `raw.githubusercontent.com` 的旧配置会被自动忽略，回退到内置页面）。
 
+### 当前推荐的免费渠道
+
+| 渠道 | 类型 | 免费额度 | 获取链接 |
+| --- | --- | --- | --- |
+| **TokenRhythm (基元律动)** | 送 68 元额度 | 新用户注册即送 68 元 Token 额度 | [前往获取](https://tokenrhythm.studio/i/rf_tr_yv5C7DZK2ykhctUVC7FqahBa) |
+| **Share LLM (额度共享)** | 分享可赚收益 | 免费注册 + 每周 300 次调用 + 闲置额度可变现 | [前往获取](https://sharellm.cn/sign-up?aff=WeRt) |
+| **OpenCode Zen** | AI 编程 | 新用户注册送免费额度 | [前往获取](https://opencode.ai/go?ref=KGZZRY644D) |
+| **AGNES AI** | 世界级 AI | 免费畅享前沿模型 | [前往获取](https://platform.agnes-ai.com) |
+| **Kilo Gateway** | 零加价 | 零加价 + 自动路由免费档 | [前往获取](https://kilo.ai/gateway) |
+| **NVIDIA NIM** | 官方免费档 | 每个模型每月约 1000 次免费请求 | [前往获取](https://integrate.api.nvidia.com) |
+| **OpenRouter** | 社区推荐 | 免费模型 20 次/分钟 | [前往获取](https://openrouter.ai) |
+
+> 上表与扩展内置的「免费 Token 推荐」卡片列表一致，随 `docs/free-tokens.html` 同步更新；点击链接即可前往对应渠道领取免费额度。
+
 ---
 
 ## 检查更新
@@ -276,6 +290,20 @@ The card list lives in `docs/free-tokens.html` and is bundled into the extension
 - Copied to `dist/free-tokens.html` and packaged in the VSIX; the extension reads it and inlines the content into the dashboard via an `<iframe srcDoc>`, so it renders reliably offline without depending on external hosts (`raw.githubusercontent.com` returns `text/plain` + `nosniff`, which iframes can't render as a page).
 - Overridable via the `byokCopilot.freeTokensUrl` setting (self-hosted CDN). Values pointing at `raw.githubusercontent.com` are ignored and fall back to the bundled page.
 - To update the list, edit and push `docs/free-tokens.html`, then **re-release the extension**.
+
+### Currently recommended free-token channels
+
+| Channel | Type | Free quota | Link |
+| --- | --- | --- | --- |
+| **TokenRhythm** | ¥68 credit gift | New users get ¥68 in token credit | [Get it](https://tokenrhythm.studio/i/rf_tr_yv5C7DZK2ykhctUVC7FqahBa) |
+| **Share LLM** | Share & earn | Free signup + 300 calls/week + earn from idle quota | [Get it](https://sharellm.cn/sign-up?aff=WeRt) |
+| **OpenCode Zen** | AI coding | Free credit for new signups | [Get it](https://opencode.ai/go?ref=KGZZRY644D) |
+| **AGNES AI** | World-class AI | Free access to frontier models | [Get it](https://platform.agnes-ai.com) |
+| **Kilo Gateway** | No markup | No markup + auto-routing of free-tier models | [Get it](https://kilo.ai/gateway) |
+| **NVIDIA NIM** | Official free tier | ~1,000 free requests per model per month | [Get it](https://integrate.api.nvidia.com) |
+| **OpenRouter** | Community pick | Free models at 20 req/min | [Get it](https://openrouter.ai) |
+
+> This table mirrors the extension's built-in "Free Token" recommendation cards and stays in sync with `docs/free-tokens.html`.
 
 ## Update Check
 

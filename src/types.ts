@@ -55,6 +55,8 @@ export interface PlanModel {
   features?: string[];
   /** 供应商侧标识该模型属于免费档位（仅作为前端提示，BYOK 不会主动改写请求）。 */
   free?: boolean;
+  /** 是否启用该模型。false 时不注册到 VS Code Chat 选择器。默认 true（兼容旧配置）。 */
+  enabled?: boolean;
 }
 
 export interface PlanConfig {

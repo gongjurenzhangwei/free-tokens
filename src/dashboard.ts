@@ -272,6 +272,14 @@ export class Dashboard {
           this.sync();
         }
       }
+      if (message.type === 'toggleModel') {
+        const plan = this.store.getPlan(message.planId);
+        if (plan) {
+          await this.store.setModelEnabled(message.planId, message.modelId, message.enabled);
+          this.provider.refresh();
+          this.sync();
+        }
+      }
     } catch (error) {
       this.sync();
       const planId = message && typeof message === 'object' && 'id' in message ? (message as { id?: string }).id : undefined;

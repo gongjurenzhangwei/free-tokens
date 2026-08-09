@@ -124,12 +124,12 @@ const copy = {
   'zh-CN': {
     overview: '概览', connections: '接入平台', models: '模型', usage: '用量与配额', settings: '设置', workspace: '控制中心',
     subtitle: '管理模型供应商、访问密钥与本地用量', newPlan: '接入 Plan', checkUpdate: '检查更新', enabledPlans: '已启用 Plan', availableModels: '可用模型',
-    updateAvailable: '扩展更新', updateAvailableTitle: '发现新版本', updateAvailableBody: (latest: string, current: string) => `当前版本 v${current}，最新版本 v${latest}。`, openRelease: '打开发布页', later: '稍后再说',
+    updateAvailable: '扩展更新', updateAvailableTitle: '发现新版本', updateUpToDateTitle: '已是最新版本', updateErrorTitle: '检查更新失败', updateAvailableBody: (latest: string, current: string) => `当前版本 v${current}，最新版本 v${latest}。`, openRelease: '打开发布页', later: '稍后再说', gotIt: '知道了', noticeTitle: '提示', noticeErrorTitle: '错误',
     apiCalls: 'API 调用', totalTokens: 'Token 总量', connectionsTitle: '连接管理', connectionsDesc: '供应商、协议、模型与凭据状态',
     noPlans: '尚未接入 Plan', noPlansDesc: '连接首个供应商后，模型会出现在 VS Code Chat 选择器中。', provider: '供应商',
     protocol: '协议', localUsage: '30 天用量', state: '状态', available: '可用', disabled: '已停用', noModels: '无模型', noKey: '无密钥',
     edit: '编辑', remove: '删除', refresh: '刷新配额', refreshPlan: '刷新此 Plan', refreshing: '正在刷新…', lastRefreshed: (when: string) => `${when} 前更新`, refreshSoon: '每 5 分钟自动刷新', autoRefreshOn: '自动刷新已开启', autoRefreshOff: '自动刷新已暂停', modelLibrary: '模型库', modelLibraryDesc: '所有已接入并选择的模型',
-    search: '搜索模型或供应商', noModelMatch: '没有匹配的模型', usageTitle: '用量与官方配额', usageDesc: '本地 30 天请求统计与供应商配额快照',
+    search: '搜索模型或供应商', noModelMatch: '没有匹配的模型', allProviders: '全部厂商', filterByProvider: '按厂商筛选', usageRecent: '最近 30 天', enableModel: '启用模型', disableModel: '停用模型', usageTitle: '用量与官方配额', usageDesc: '本地 30 天请求统计与供应商配额快照',
     input: '输入', output: '输出', failures: '失败', quotaPending: '尚未获取官方配额', quotaUnsupported: '该供应商未提供官方配额接口', quotaUnsupportedHint: '已停止自动刷新。', goUsageHint: 'OpenCode 不开放用量查询接口，请在控制台查看实时用量：opencode.ai/auth', modelInvalid: '模型 ID 不可用', modelInvalidHint: 'Function UUID 不能用于 Chat。请改用真实的 NIM 模型名，例如 meta/llama-3.1-70b-instruct。', settingsTitle: '控制台设置', settingsDesc: '调整模型可见性、状态栏和外观',
     onlyAvailable: '仅显示可用模型', onlyAvailableDesc: '只向 Chat 暴露已启用、有模型且已保存 API Key 的 Plan。',
     configTitle: '配置备份', configDesc: '导出或导入所有 Plan、设置、用量记录与配额快照。',
@@ -156,12 +156,12 @@ const copy = {
   en: {
     overview: 'Overview', connections: 'Connections', models: 'Models', usage: 'Usage & quota', settings: 'Settings', workspace: 'Control center',
     subtitle: 'Manage model providers, credentials, and local usage', newPlan: 'Connect plan', checkUpdate: 'Check updates', enabledPlans: 'Enabled plans', availableModels: 'Available models',
-    updateAvailable: 'Extension update', updateAvailableTitle: 'A new version is available', updateAvailableBody: (latest: string, current: string) => `You are on v${current}; the latest release is v${latest}.`, openRelease: 'Open release', later: 'Later',
+    updateAvailable: 'Extension update', updateAvailableTitle: 'A new version is available', updateUpToDateTitle: 'You are up to date', updateErrorTitle: 'Update check failed', updateAvailableBody: (latest: string, current: string) => `You are on v${current}; the latest release is v${latest}.`, openRelease: 'Open release', later: 'Later', gotIt: 'Got it', noticeTitle: 'Notice', noticeErrorTitle: 'Error',
     apiCalls: 'API calls', totalTokens: 'Total tokens', connectionsTitle: 'Connections', connectionsDesc: 'Provider, protocol, models, and credential health',
     noPlans: 'No plans connected', noPlansDesc: 'Connect a provider to expose its models in the VS Code Chat picker.', provider: 'Provider',
     protocol: 'Protocol', localUsage: '30-day usage', state: 'State', available: 'Available', disabled: 'Disabled', noModels: 'No models', noKey: 'No key',
     edit: 'Edit', remove: 'Delete', refresh: 'Refresh quota', refreshPlan: 'Refresh this plan', refreshing: 'Refreshing…', lastRefreshed: (when: string) => `Updated ${when} ago`, refreshSoon: 'Updates every 5 minutes', autoRefreshOn: 'Auto refresh on', autoRefreshOff: 'Auto refresh paused', modelLibrary: 'Model library', modelLibraryDesc: 'Every selected model across connected plans',
-    search: 'Search models or providers', noModelMatch: 'No models match this search', usageTitle: 'Usage & official quota', usageDesc: 'Local 30-day request data and provider quota snapshots',
+    search: 'Search models or providers', noModelMatch: 'No models match this search', allProviders: 'All providers', filterByProvider: 'Filter by provider', usageRecent: 'Last 30 days', enableModel: 'Enable model', disableModel: 'Disable model', usageTitle: 'Usage & official quota', usageDesc: 'Local 30-day request data and provider quota snapshots',
     input: 'Input', output: 'Output', failures: 'Failures', quotaPending: 'Official quota not fetched', quotaUnsupported: 'Provider has no official quota endpoint', quotaUnsupportedHint: 'Auto refresh is disabled.', goUsageHint: 'OpenCode does not expose a usage API. See live usage in the console: opencode.ai/auth', modelInvalid: 'Invalid model ID', modelInvalidHint: 'Function UUID cannot be used in Chat. Replace it with a real NIM model id like meta/llama-3.1-70b-instruct.', settingsTitle: 'Console settings', settingsDesc: 'Control model visibility, status bar, and appearance',
     onlyAvailable: 'Only show available models', onlyAvailableDesc: 'Only expose enabled plans with models and a stored API key to Chat.',
     configTitle: 'Configuration backup', configDesc: 'Export or import all plans, settings, usage, and quota snapshots.',
@@ -304,17 +304,12 @@ export function Example() {
     const receive = (event: MessageEvent) => {
       if (event.data.type === 'state') setState(event.data);
       if (event.data.type === 'notice') {
+        // 所有消息都用弹窗展示，由用户确认后关闭（不用 Toast）
         setNotice(event.data);
-        window.setTimeout(() => setNotice(undefined), 5000);
       }
       if (event.data.type === 'updateResult') {
-        const data = event.data;
-        if (data.status === 'outdated') {
-          setUpdate(data);
-        } else {
-          setNotice({ level: data.status === 'error' ? 'error' : 'success', message: data.message || (data.status === 'error' ? (language === 'en' ? 'Update check failed.' : '检查更新失败。') : (language === 'en' ? 'You are up to date.' : '已是最新版本。')) });
-          window.setTimeout(() => setNotice(undefined), 5000);
-        }
+        // 有没有新版本 / 已是最新 / 检查出错 都统一用弹窗
+        setUpdate(event.data);
       }
     };
     window.addEventListener('message', receive);
@@ -418,28 +413,59 @@ export function Example() {
       </main>
       {editorPlan !== undefined && <PlanEditor plan={editorPlan} language={language} text={text} close={() => setEditorPlan(undefined)} />}
       {showSubmitChannel && <SubmitChannelModal language={language} text={text} close={() => setShowSubmitChannel(false)} />}
-      {update && update.status === 'outdated' && (
+      {update && (
         <div className="modal-backdrop update-modal" role="dialog" aria-modal="true" onClick={(event) => { if (event.target === event.currentTarget) setUpdate(undefined); }}>
           <div className="editor-modal update-modal-card">
             <header>
               <div>
                 <p>{text.updateAvailable}</p>
-                <h2>{text.updateAvailableTitle}</h2>
+                <h2>{update.status === 'outdated' ? text.updateAvailableTitle : update.status === 'error' ? text.updateErrorTitle : text.updateUpToDateTitle}</h2>
               </div>
               <button className="icon-button" onClick={() => setUpdate(undefined)} aria-label={language === 'en' ? 'Close' : '关闭'}><X size={18} /></button>
             </header>
             <div className="update-modal-body">
-              <div className="update-modal-icon"><Download size={26} /></div>
-              <p className="update-modal-text">{text.updateAvailableBody(update.latest || '', update.current || '')}</p>
+              <div className={`update-modal-icon ${update.status === 'outdated' ? 'info' : update.status === 'error' ? 'error' : 'success'}`}>
+                {update.status === 'outdated' ? <Download size={26} /> : update.status === 'error' ? <AlertTriangle size={26} /> : <Check size={26} />}
+              </div>
+              <p className="update-modal-text">
+                {update.status === 'outdated' ? text.updateAvailableBody(update.latest || '', update.current || '') : (update.message || (update.status === 'error' ? (language === 'en' ? 'Update check failed.' : '检查更新失败。') : (language === 'en' ? 'You are up to date.' : '已是最新版本。')))}
+              </p>
             </div>
             <footer>
-              <button className="secondary-button" onClick={() => setUpdate(undefined)}>{text.later}</button>
-              <button className="primary-button" onClick={() => { vscode.postMessage({ type: 'openExternal', url: update.openUrl }); setUpdate(undefined); }}><Download size={16} strokeWidth={2} />{text.openRelease}</button>
+              {update.status === 'outdated' ? (
+                <>
+                  <button className="secondary-button" onClick={() => setUpdate(undefined)}>{text.later}</button>
+                  <button className="primary-button" onClick={() => { vscode.postMessage({ type: 'openExternal', url: update.openUrl }); setUpdate(undefined); }}><Download size={16} strokeWidth={2} />{text.openRelease}</button>
+                </>
+              ) : (
+                <button className="primary-button" onClick={() => setUpdate(undefined)}><Check size={16} strokeWidth={2} />{text.gotIt}</button>
+              )}
             </footer>
           </div>
         </div>
       )}
-      {notice && <div className={`toast ${notice.level}`}>{notice.level === 'success' ? <Check /> : <X />}<span>{notice.message}</span></div>}
+      {!update && notice && (
+        <div className="modal-backdrop update-modal" role="dialog" aria-modal="true" onClick={(event) => { if (event.target === event.currentTarget) setNotice(undefined); }}>
+          <div className="editor-modal update-modal-card">
+            <header>
+              <div>
+                <p>{notice.level === 'error' ? text.noticeErrorTitle : text.noticeTitle}</p>
+                <h2>{notice.level === 'error' ? text.noticeErrorTitle : text.noticeTitle}</h2>
+              </div>
+              <button className="icon-button" onClick={() => setNotice(undefined)} aria-label={language === 'en' ? 'Close' : '关闭'}><X size={18} /></button>
+            </header>
+            <div className="update-modal-body">
+              <div className={`update-modal-icon ${notice.level === 'error' ? 'error' : 'success'}`}>
+                {notice.level === 'error' ? <AlertTriangle size={26} /> : <Check size={26} />}
+              </div>
+              <p className="update-modal-text">{notice.message}</p>
+            </div>
+            <footer>
+              <button className="primary-button" onClick={() => setNotice(undefined)}><Check size={16} strokeWidth={2} />{text.gotIt}</button>
+            </footer>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -812,15 +838,61 @@ function PlanActivity({ plan, state, language, text, edit }: any) {
 
 function Models({ state, language, text }: any) {
   const [query, setQuery] = useState('');
+  const [providerFilter, setProviderFilter] = useState('');
   const models = state.plans.flatMap((plan: PlanConfig) => plan.models.map(model => ({ ...model, plan })));
-  const visible = models.filter((model: any) => `${model.id} ${model.name} ${model.plan.provider}`.toLowerCase().includes(query.toLowerCase()));
+  const providers = useMemo(() => Array.from(new Set<string>((state.plans as PlanConfig[]).map(plan => plan.provider).filter(Boolean))), [state.plans]);
+  const visible = models.filter((model: any) =>
+    (!providerFilter || model.plan.provider === providerFilter)
+    && `${model.id} ${model.name} ${model.plan.provider}`.toLowerCase().includes(query.toLowerCase())
+  );
+  // 最近 30 天每个模型的调用次数与 Token 消耗（只展示概要，不展示明细）
+  const usageByModel = useMemo(() => {
+    const cutoff = Date.now() - 30 * 86400000;
+    const map = new Map<string, { requests: number; totalTokens: number }>();
+    for (const record of state.allUsageRecords || []) {
+      if (record.timestamp < cutoff || !record.success) continue;
+      const key = `${record.planId}:${record.modelId}`;
+      const current = map.get(key) || { requests: 0, totalTokens: 0 };
+      current.requests += record.requests;
+      current.totalTokens += record.totalTokens;
+      map.set(key, current);
+    }
+    return map;
+  }, [state.allUsageRecords]);
   return <section className="glass-panel"><PanelHeading title={text.modelLibrary} detail={text.modelLibraryDesc} />
-    <div className="search-box"><Search /><input value={query} onChange={event => setQuery(event.target.value)} placeholder={text.search} /></div>
+    <div className="model-toolbar">
+      <div className="search-box"><Search /><input value={query} onChange={event => setQuery(event.target.value)} placeholder={text.search} /></div>
+      <label className="provider-filter">
+        <span>{text.filterByProvider}</span>
+        <select value={providerFilter} onChange={event => setProviderFilter(event.target.value)}>
+          <option value="">{text.allProviders}</option>
+          {providers.map(provider => <option key={provider} value={provider}>{provider}</option>)}
+        </select>
+      </label>
+    </div>
     <div className="model-grid">{visible.map((model: any) => {
       const invalid = isInvalidModelId(model.plan, model.id);
+      const modelEnabled = (model.enabled ?? true) !== false;
       const displayName = normalizeModelName(model.name) || model.id;
       const showName = displayName !== model.id;
-      return <article className={`model-card ${invalid ? 'is-invalid' : ''}`} key={`${model.plan.id}-${model.id}`}><div className="model-card-head"><span className="model-chip"><ModelIcon provider={model.plan.provider} baseUrl={model.plan.baseUrl} name={model.name} kind={model.kind} /></span><span className={`health ${invalid ? 'danger' : (model.plan.enabled ? 'healthy' : 'warning')}`}><i />{invalid ? text.modelInvalid : (model.plan.enabled ? text.available : text.disabled)}</span></div>{showName ? <strong>{displayName}</strong> : <strong className="model-card-id-only">{model.id}</strong>}<code>{model.id}</code><p>{model.plan.name} / {model.plan.provider}</p>{invalid ? <p className="model-invalid-hint">{text.modelInvalidHint}</p> : <div className="feature-list">{modelFeatures(model, language).map(value => <span key={value}>{value}</span>)}</div>}</article>;
+      const usage = usageByModel.get(`${model.plan.id}:${model.id}`);
+      return <article className={`model-card ${invalid ? 'is-invalid' : ''} ${modelEnabled ? '' : 'is-disabled'}`} key={`${model.plan.id}-${model.id}`}>
+        <div className="model-card-head">
+          <span className="model-chip"><ModelIcon provider={model.plan.provider} baseUrl={model.plan.baseUrl} name={model.name} kind={model.kind} /></span>
+          <label className="switch model-switch" title={modelEnabled ? text.disableModel : text.enableModel}>
+            <input type="checkbox" checked={modelEnabled} onChange={event => vscode.postMessage({ type: 'toggleModel', planId: model.plan.id, modelId: model.id, enabled: event.target.checked })} />
+            <span />
+          </label>
+        </div>
+        {showName ? <strong>{displayName}</strong> : <strong className="model-card-id-only">{model.id}</strong>}
+        <code>{model.id}</code>
+        <p>{model.plan.name} / {model.plan.provider}</p>
+        {invalid ? <p className="model-invalid-hint">{text.modelInvalidHint}</p> : <div className="feature-list">{modelFeatures(model, language).map(value => <span key={value}>{value}</span>)}</div>}
+        <div className="model-meta">
+          <span className={`health ${invalid ? 'danger' : (model.plan.enabled ? 'healthy' : 'warning')}`}><i />{invalid ? text.modelInvalid : (model.plan.enabled ? text.available : text.disabled)}</span>
+          <span className="model-usage" title={text.usageRecent}>{usage ? <>{formatNumber(usage.requests, language)} {text.trendRequests} · {formatNumber(usage.totalTokens, language)} tok</> : <span className="model-usage-empty">—</span>}</span>
+        </div>
+      </article>;
     })}</div>
     {!visible.length && <div className="empty-compact"><Search /><span>{text.noModelMatch}</span></div>}
   </section>;

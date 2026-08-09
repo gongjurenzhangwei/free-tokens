@@ -180,6 +180,20 @@
           send(buildStateMessage(ctx.state));
           return;
         }
+        if (message.type === 'toggleModel') {
+          ctx.state.plans = ctx.state.plans.map(function (p) {
+            if (p.id !== message.planId) return p;
+            return Object.assign({}, p, {
+              models: (p.models || []).map(function (m) {
+                return m.id === message.modelId ? Object.assign({}, m, { enabled: !!message.enabled }) : m;
+              }),
+              updatedAt: Date.now(),
+            });
+          });
+          saveState(ctx.state);
+          send(buildStateMessage(ctx.state));
+          return;
+        }
         if (message.type === 'delete') {
           ctx.state.plans = ctx.state.plans.filter(function (p) { return p.id !== message.id; });
           delete ctx.state.apiKeys[message.id];

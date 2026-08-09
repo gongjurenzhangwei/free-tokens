@@ -215,6 +215,21 @@
     if (document.readyState === 'complete') reportHeight();
     else window.addEventListener('load', reportHeight);
     window.addEventListener('resize', reportHeight);
+
+    // VS Code webviews block the default target="_blank" behavior (links would
+    // be inert inside an iframe). Route every external link to the host so it
+    // opens in the system default browser via vscode.env.openExternal.
+    document.addEventListener('click', function (e) {
+      var a = e.target && e.target.closest ? e.target.closest('a[target="_blank"]') : null;
+      if (!a) return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (a.dataset.byokHandled) return;
+      a.dataset.byokHandled = '1';
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: 'openExternal', url: a.href }, '*');
+      }
+    }, true);
   </script>
 </body>
 </html>

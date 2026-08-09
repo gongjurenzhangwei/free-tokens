@@ -1114,13 +1114,18 @@ function FreeTokensView({ language, text }: { language: 'zh-CN' | 'en'; text: an
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
   // The hosted page posts its own height so the iframe can size itself to fit
-  // (no inner scrollbar). Works across origins via postMessage.
+  // (no inner scrollbar). Works across origins via postMessage. It also
+  // forwards external link clicks (type: openExternal) from the inner page so
+  // the extension can open them in the system default browser.
   useEffect(() => {
     const onMessage = (event: MessageEvent) => {
       const data = event.data;
-      if (data && typeof data === 'object' && data.type === 'freeTokensHeight') {
+      if (!data || typeof data !== 'object') return;
+      if (data.type === 'freeTokensHeight') {
         const h = Number(data.height);
         if (Number.isFinite(h) && h > 0) setFrameHeight(h);
+      } else if (data.type === 'openExternal' && typeof data.url === 'string') {
+        vscode.postMessage({ type: 'openExternal', url: data.url });
       }
     };
     window.addEventListener('message', onMessage);
@@ -1160,7 +1165,23 @@ function FreeTokensView({ language, text }: { language: 'zh-CN' | 'en'; text: an
             // srcDoc is same-origin, so we can always measure its height here;
             // for a remote URL this fallback only works when same-origin.
             const doc = iframeRef.current?.contentDocument;
-            if (doc && doc.body) setFrameHeight(doc.body.scrollHeight);
+            if (!doc || !doc.body) return;
+            setFrameHeight(doc.body.scrollHeight);
+            // Belt-and-suspenders: if the inner page's own click handler was
+            // blocked (e.g. CSP), bind native handlers here (same-origin only)
+            // so every "前往获取" link still opens the system browser. The
+            // byokHandled flag keeps this from double-firing with the page's
+            // own handler.
+            doc.querySelectorAll('a[target="_blank"]').forEach((node) => {
+              const anchor = node as HTMLAnchorElement;
+              if (anchor.dataset.byokHandled) return;
+              anchor.dataset.byokHandled = '1';
+              anchor.addEventListener('click', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                vscode.postMessage({ type: 'openExternal', url: anchor.href });
+              });
+            });
           }}
           ref={iframeRef}
         />

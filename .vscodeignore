@@ -10,4 +10,5 @@ dist/**/*.map
 postcss.config.js
 tailwind.config.js
 *.vsix
+preview/**
 preview-trend.html

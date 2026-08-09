@@ -79,6 +79,12 @@ export function activate(context: vscode.ExtensionContext): void {
     status,
     store.onDidChange(onStoreChanged),
     vscode.commands.registerCommand('byokCopilot.openDashboard', () => dashboard.open()),
+    vscode.commands.registerCommand('byokCopilot.seedDemoData', async () => {
+      await seedDemoData(context);
+      vscode.window.showInformationMessage('BYOK COPILOT 演示数据已注入。');
+      provider.refresh();
+      dashboard.open();
+    }),
     vscode.lm.registerLanguageModelChatProvider('byok-copilot', provider),
   );
 }

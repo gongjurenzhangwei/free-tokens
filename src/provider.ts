@@ -52,6 +52,7 @@ export class ByokLanguageModelProvider implements vscode.LanguageModelChatProvid
       return true;
     }).flatMap((plan) => plan.models
       .filter((model) => !isInvalidModelId(plan.baseUrl, model.id))
+      .filter((model) => (model.kind ?? 'chat') === 'chat')  // 只把 chat 模型注册到 VS Code Chat 选择器
       .map((model) => ({
         id: `${plan.id}:${model.id}`,
         name: `${plan.provider} / ${model.name}`,

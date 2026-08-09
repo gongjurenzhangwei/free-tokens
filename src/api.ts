@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { ApiProtocol, PlanConfig, PlanModel, QuotaSnapshot, QuotaWindow } from './types';
+import { ApiProtocol, ModelKind, PlanConfig, PlanModel, QuotaSnapshot, QuotaWindow } from './types';
 
 interface ChatResult {
   inputTokens: number;
@@ -78,6 +78,19 @@ function booleanCapability(item: ModelPayload, features: string[], fieldNames: s
   return undefined;
 }
 
+/* 根据模型 ID / 名字 / 上报的能力自动判断用途分类。
+   优先级：明确的 modality / output_modalities 字段 > 名称里的关键字 > 默认 chat。 */
+function kindForModel(id: string, name: string, features: string[]): ModelKind {
+  const text = `${id} ${name} ${features.join(' ')}`.toLowerCase();
+  const has = (pattern: RegExp): boolean => pattern.test(text);
+  if (has(/\bembed(ding)?s?\b|encoder\b|text-embedding/)) return 'embed';
+  if (has(/dall[- ]?e|stable[- ]?diffusion|sd\d|sdxl|flux|midjourney|imagen[- ]?\d|kandinsky|playground[- ]?v|recraft|text[-_]to[-_]image|t2i\b|image[-_]generation|imagegen\b/)) return 'image';
+  if (has(/video|t2v\b|i2v\b|text[-_]to[-_]video|image[-_]to[-_]video|runway|sora|veo|kling|hailuo|pika|luma/)) return 'video';
+  if (has(/\btts\b|text[-_]to[-_]speech|speech[-_]synth|whisper|transcri|audio|tts-?\d|stt\b/)) return 'audio';
+  if (has(/vision[-_]?(only|image)|image[-_]input|image[-_]to[-_]text/)) return 'chat';
+  return 'chat';
+}
+
 function modelFromPayload(item: ModelPayload, provider: string, nvidiaNim = false): PlanModel {
   const id = modelIdFromPayload(item, nvidiaNim);
   const known = knownModel(provider, String(id));
@@ -88,9 +101,12 @@ function modelFromPayload(item: ModelPayload, provider: string, nvidiaNim = fals
   const supportsVision = booleanCapability(item, features, ['vision', 'supports_vision', 'image_input'], /vision|image/i) ?? known.supportsVision;
   const supportsWebSearch = booleanCapability(item, features, ['web_search', 'supports_web_search', 'internet_access'], /web.?search|internet|联网/i) ?? known.supportsWebSearch;
   const free = nvidiaNim ? isNvidiaFreeModel(String(id)) : undefined;
+  const name = String(item.display_name ?? item.name ?? item.id ?? '');
+  const kind = kindForModel(String(id), name, features);
   return {
     ...modelDefaults(String(id)),
-    name: String(item.display_name ?? item.name ?? item.id ?? ''),
+    name,
+    kind,
     maxInputTokens: contextLength ?? 120000,
     maxOutputTokens: maxOutputTokens ?? 8192,
     toolCalling: supportsTools ?? true,
@@ -196,12 +212,46 @@ export interface PlanConnection {
 }
 
 function probeModels(models: PlanModel[]): PlanModel[] {
-  const unsuitable = /embed|image|audio|speech|transcri|moderation|rerank/i;
-  const preferred = models.filter((model) => !unsuitable.test(model.id));
+  /* 仅在找不到任何 chat 模型时退回 image/video/embed；
+     embed 与 audio 通常用专有端点，留给调用方各自探针处理，这里仍允许它们出现在列表里。 */
+  const unsuitable = /\bmoderation\b|\brerank\b/i;
+  const preferred = models.filter((model) => !unsuitable.test(model.id) && (model.kind ?? 'chat') !== 'embed' && (model.kind ?? 'chat') !== 'audio');
   return (preferred.length ? preferred : models).slice(0, 3);
 }
 
 async function probeProtocol(plan: PlanConfig, model: PlanModel, apiKey: string): Promise<void> {
+  const kind = model.kind ?? 'chat';
+  if (kind === 'image') {
+    /* OpenAI Images API 兼容端点，prompt 用模型 ID 派生一个短字符串避免触犯内容策略。 */
+    await requestFirst(plan, apiKey, '/images/generations', {
+      method: 'POST',
+      body: JSON.stringify({ model: model.id, prompt: 'ping', size: '256x256', n: 1 }),
+    });
+    return;
+  }
+  if (kind === 'video') {
+    /* OpenAI `/v1/videos` 兼容端点（部分供应商如 OpenAI Sora、Veo、Kling 等）。
+       不同供应商字段差异较大，只发最稳的最小 payload 探测。 */
+    await requestFirst(plan, apiKey, '/videos', {
+      method: 'POST',
+      body: JSON.stringify({ model: model.id, prompt: 'ping', duration_seconds: 1 }),
+    });
+    return;
+  }
+  if (kind === 'embed') {
+    await requestFirst(plan, apiKey, '/embeddings', {
+      method: 'POST',
+      body: JSON.stringify({ model: model.id, input: 'ping' }),
+    });
+    return;
+  }
+  if (kind === 'audio') {
+    await requestFirst(plan, apiKey, '/audio/speech', {
+      method: 'POST',
+      body: JSON.stringify({ model: model.id, input: 'ping', voice: 'alloy' }),
+    });
+    return;
+  }
   if (plan.protocol === 'responses') {
     await requestFirst(plan, apiKey, '/responses', { method: 'POST', body: JSON.stringify({ model: model.id, input: 'Hi', max_output_tokens: 16, stream: false }) });
     return;

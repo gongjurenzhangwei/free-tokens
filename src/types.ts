@@ -1,5 +1,15 @@
 export type ApiProtocol = 'openai' | 'responses' | 'anthropic';
 
+/**
+ * 模型的用途分类。
+ *  - chat    文本对话（注册到 VS Code Chat 模型选择器）
+ *  - image   文生图 / 图生图（OpenAI `/v1/images/generations` 兼容）
+ *  - video   文生视频 / 图生视频（OpenAI `/v1/videos` 兼容）
+ *  - embed   向量嵌入（用于检索）
+ *  - audio   语音合成 / 转写
+ */
+export type ModelKind = 'chat' | 'image' | 'video' | 'embed' | 'audio';
+
 export type StatusBarUsageMode = 'off' | 'tokens' | 'quota';
 
 export interface QuotaWindow {
@@ -26,6 +36,12 @@ export type QuotaSnapshotWithStatus = QuotaSnapshot | { planId: string; fetchedA
 export interface PlanModel {
   id: string;
   name: string;
+  /**
+   * 模型用途分类。`undefined` 时按 `chat` 处理（兼容旧配置）。
+   * - chat：注册到 VS Code Chat 模型选择器
+   * - image / video / embed / audio：保留在 Plan 中供后续扩展调用，不进 Chat 选单
+   */
+  kind?: ModelKind;
   maxInputTokens: number;
   maxOutputTokens: number;
   toolCalling: boolean;

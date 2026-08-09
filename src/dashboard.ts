@@ -5,7 +5,7 @@ import { ByokLanguageModelProvider } from './provider';
 import { ConfigBundle, PlanStore } from './store';
 import { PlanInput, UsageRecord } from './types';
 
-type DashboardMessageKey = 'apiKeyRequired' | 'testFirst' | 'incompletePlan' | 'quotaUnavailable' | 'missingPlan' | 'deletePrompt' | 'deleteAction' | 'exportSuccess' | 'exportFail' | 'importSuccess' | 'importFail' | 'exportPrompt' | 'replacePrompt' | 'mergePrompt' | 'skipPrompt' | 'importStrategyPrompt';
+type DashboardMessageKey = 'apiKeyRequired' | 'testFirst' | 'incompletePlan' | 'quotaUnavailable' | 'missingPlan' | 'deletePrompt' | 'deleteAction' | 'exportSuccess' | 'exportFail' | 'importSuccess' | 'importFail' | 'exportPrompt' | 'replacePrompt' | 'mergePrompt' | 'skipPrompt' | 'importStrategyPrompt' | 'passphrasePrompt' | 'passphrasePlaceholder' | 'passphraseMissing' | 'plaintextImport' | 'plaintextImportHint';
 
 const messages: Record<'zh-CN' | 'en', Record<DashboardMessageKey, string>> = {
   'zh-CN': {
@@ -25,6 +25,11 @@ const messages: Record<'zh-CN' | 'en', Record<DashboardMessageKey, string>> = {
     mergePrompt: '按 ID 合并同名 Plan',
     skipPrompt: '跳过同名 Plan',
     importStrategyPrompt: '检测到 {count} 个 Plan 与现有配置冲突。处理方式：',
+    passphrasePrompt: '此配置包含加密的 API Key，请输入解钥（来自首次导出的工作区）。',
+    passphrasePlaceholder: '解钥（passphrase）',
+    passphraseMissing: '未提供解钥，无法导入加密的 API Key。',
+    plaintextImport: '检测到旧版未加密配置',
+    plaintextImportHint: '该文件包含明文 API Key，建议改用加密格式导出。',
   },
   en: {
     apiKeyRequired: 'Enter an API key.',
@@ -43,8 +48,27 @@ const messages: Record<'zh-CN' | 'en', Record<DashboardMessageKey, string>> = {
     mergePrompt: 'Merge plans with the same ID',
     skipPrompt: 'Skip plans with the same ID',
     importStrategyPrompt: '{count} plan(s) conflict with existing ones. How should I handle them?',
+    passphrasePrompt: 'This bundle contains encrypted API keys. Enter the passphrase from the workspace that originally exported it.',
+    passphrasePlaceholder: 'Passphrase',
+    passphraseMissing: 'No passphrase supplied; encrypted keys will be skipped.',
+    plaintextImport: 'Unencrypted bundle detected',
+    plaintextImportHint: 'The file includes plaintext API keys. Re-export from a recent build to use the encrypted format.',
   },
 };
+
+/** Compare dotted version strings (e.g. "1.5.15" vs "1.5.16"). Returns <0, 0, >0. */
+function compareVersions(a: string, b: string): number {
+  const pa = a.replace(/^v/, '').split('.').map((n) => parseInt(n, 10) || 0);
+  const pb = b.replace(/^v/, '').split('.').map((n) => parseInt(n, 10) || 0);
+  const len = Math.max(pa.length, pb.length);
+  for (let i = 0; i < len; i++) {
+    const x = pa[i] || 0;
+    const y = pb[i] || 0;
+    if (x > y) return 1;
+    if (x < y) return -1;
+  }
+  return 0;
+}
 
 export class Dashboard {
   private panel?: vscode.WebviewPanel;
@@ -189,6 +213,18 @@ export class Dashboard {
         await this.handleImport(typeof message.includeApiKeys === 'boolean' ? message.includeApiKeys : false);
         return;
       }
+      if (message.type === 'openExternal') {
+        // Defer to VS Code so the URL opens in the system default browser instead of the integrated one.
+        const url = typeof message.url === 'string' ? message.url : '';
+        if (url && /^https?:\/\//i.test(url)) {
+          await vscode.env.openExternal(vscode.Uri.parse(url));
+        }
+        return;
+      }
+      if (message.type === 'checkUpdate') {
+        await this.checkUpdate();
+        return;
+      }
       
       if (message.type === 'delete') {
         const plan = this.store.getPlan(message.id);
@@ -221,6 +257,40 @@ export class Dashboard {
     this.panel?.webview.postMessage({ type: 'notice', level, message, planId });
   }
 
+  /** GitHub repository used for update checks (owner/repo). Matches the `git remote` in this repo. */
+  private static readonly UPDATE_REPO = 'gongjurenzhangwei/byok-copilot';
+
+  private async checkUpdate(): Promise<void> {
+    try {
+      const response = await fetch(`https://api.github.com/repos/${Dashboard.UPDATE_REPO}/releases/latest`, {
+        headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'byok-copilot' },
+      });
+      if (!response.ok) throw new Error(`GitHub API responded ${response.status}`);
+      const release = await response.json() as { tag_name?: string; html_url?: string; name?: string };
+      const latest = (release.tag_name || '').replace(/^v/, '');
+      const current = this.version.replace(/^v/, '');
+      if (!latest) throw new Error(this.isEnglish ? 'No release tag found.' : '未找到发布标签。');
+      if (compareVersions(latest, current) > 0) {
+        const label = release.name || release.tag_name || `v${latest}`;
+        const action = this.isEnglish ? 'Go to download' : '前往下载';
+        const picked = await vscode.window.showInformationMessage(
+          this.isEnglish
+            ? `A new version is available: ${label} (current v${current}).`
+            : `发现新版本：${label}（当前 v${current}）。`,
+          action,
+        );
+        if (picked === action && release.html_url) {
+          await vscode.env.openExternal(vscode.Uri.parse(release.html_url));
+        }
+        return;
+      }
+      await vscode.window.showInformationMessage(this.isEnglish ? 'You are up to date.' : '已是最新版本。');
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : String(error);
+      await vscode.window.showErrorMessage(this.isEnglish ? `Update check failed: ${reason}` : `检查更新失败：${reason}`);
+    }
+  }
+
   private async handleExport(includeApiKeys: boolean): Promise<void> {
     try {
       const defaultName = `byok-copilot-config${includeApiKeys ? '-with-keys' : ''}-${new Date().toISOString().slice(0, 10)}.byok.json`;
@@ -230,7 +300,8 @@ export class Dashboard {
         title: this.text('exportPrompt'),
       });
       if (!uri) return;
-      const bundle = await this.store.exportConfig({ includeApiKeys });
+      // Always encrypt API keys when included. AES-256-GCM with a per-workspace passphrase stored in SecretStorage.
+      const bundle = await this.store.exportConfig({ includeApiKeys, encryptApiKeys: includeApiKeys });
       const payload = JSON.stringify(bundle, null, 2);
       await vscode.workspace.fs.writeFile(uri, Buffer.from(payload, 'utf-8'));
       const path = uri.fsPath || uri.toString();
@@ -254,9 +325,25 @@ export class Dashboard {
       const raw = await vscode.workspace.fs.readFile(picked[0]);
       const text = Buffer.from(raw).toString('utf-8');
       const bundle = JSON.parse(text) as ConfigBundle;
+      // If the bundle contains encrypted secrets, ask the user for the passphrase.
+      let passphrase: string | undefined;
+      const hasEncrypted = bundle && bundle.secrets && Object.keys(bundle.secrets).length > 0;
+      const hasPlaintext = bundle && bundle.apiKeys && Object.keys(bundle.apiKeys).length > 0;
+      if (hasEncrypted) {
+        const input = await vscode.window.showInputBox({
+          prompt: this.text('passphrasePrompt'),
+          placeHolder: this.text('passphrasePlaceholder'),
+          password: true,
+          ignoreFocusOut: true,
+        });
+        if (input === undefined) return; // user cancelled
+        passphrase = input || undefined;
+      } else if (hasPlaintext) {
+        this.notice('warning', `${this.text('plaintextImport')}：${this.text('plaintextImportHint')}`);
+      }
       const strategy = await this.promptImportStrategy(bundle);
       if (!strategy) return;
-      const summary = await this.store.importConfig(bundle, { strategy, includeApiKeys });
+      const summary = await this.store.importConfig(bundle, { strategy, includeApiKeys, passphrase });
       this.provider.refresh();
       this.sync();
       const template = this.text('importSuccess');

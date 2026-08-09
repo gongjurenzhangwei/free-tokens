@@ -81,15 +81,14 @@ export class Dashboard {
   ) {}
 
   /**
-   * URL of the externally-hosted free-token recommendations page. Owners can
-   * override the default (which points to docs/free-tokens.html on this repo's
-   * main branch) by setting `byokCopilot.freeTokensUrl` in VS Code settings.
-   * Leave it empty (default) to use the repo-hosted HTML.
+   * User-configured override for the free-token recommendations page (may be empty).
+   * When empty, the dashboard falls back to the HTML bundled inside the extension
+   * (dist/free-tokens.html) so the recommendations always render without depending
+   * on external hosts (raw.githubusercontent.com serves text/plain, which iframes
+   * render as raw source text instead of HTML).
    */
   private freeTokensUrl(): string {
-    const configured = vscode.workspace.getConfiguration('byokCopilot').get<string>('freeTokensUrl', '').trim();
-    if (configured) return configured;
-    return 'https://raw.githubusercontent.com/gongjurenzhangwei/free-tokens/HEAD/docs/free-tokens.html';
+    return vscode.workspace.getConfiguration('byokCopilot').get<string>('freeTokensUrl', '').trim();
   }
 
   open(): void {

@@ -71,7 +71,7 @@
 
 ### 免费 Token 推荐页
 - Dashboard 内置「免费 Token 推荐」卡片列表，列出可以免费领取 Token / 免费额度的供应商；
-- 该页面由**独立的远程 HTML**（`docs/free-tokens.html`）通过 iframe 渲染，**不打包进扩展**——更新它只需推送 GitHub 即可，无需重新发布扩展（见 [免费 Token 推荐](#免费-token-推荐)）。
+- 该页面由 `docs/free-tokens.html` 通过 iframe 渲染，**构建时打包进扩展**，保证离线 / 弱网下也能正常显示（见 [免费 Token 推荐](#免费-token-推荐)）。
 
 ---
 
@@ -134,10 +134,9 @@ Base URL 可以是以下任意一种写法，扩展会自动处理：
 
 「免费 Token 推荐」卡片列表由 `docs/free-tokens.html` 提供，通过 **iframe** 渲染在 Dashboard 中：
 
-- 该 HTML **不打包进扩展**（已在 `.vscodeignore` 中排除）；
-- 默认从本仓库 `main` 分支的 `raw.githubusercontent.com` 加载；
-- 你可以通过 VS Code 设置 `byokCopilot.freeTokensUrl` 覆盖为**自托管 CDN / 自建站点**的地址；
-- 更新渠道列表只需修改并推送 `docs/free-tokens.html`，用户刷新 Dashboard 即可看到新内容，**无需重新发布扩展**。
+- 构建时该 HTML 会被复制到 `dist/free-tokens.html` 并**打包进扩展**，默认从扩展内置页面加载——即使离线或无法访问 GitHub 也能正常显示（`raw.githubusercontent.com` 对 HTML 返回 `text/plain`，iframe 无法渲染为页面，因此不依赖远程源）；
+- 更新渠道列表需修改并推送 `docs/free-tokens.html` 后**重新发布扩展**；
+- 你仍可通过 VS Code 设置 `byokCopilot.freeTokensUrl` 覆盖为**自托管 CDN / 自建站点**的地址，覆盖后内容改由该地址提供。
 
 ---
 

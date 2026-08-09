@@ -337,25 +337,28 @@ export class Dashboard {
 
   private async checkUpdate(): Promise<void> {
     try {
-      const response = await fetch(`https://api.github.com/repos/${Dashboard.UPDATE_REPO}/releases/latest`, {
-        headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'free-tokens' },
+      // The repo is distributed as source (no GitHub Releases are published),
+      // so releases/latest 404s. Read the version from package.json on the
+      // default branch instead: raw.githubusercontent.com is not subject to the
+      // GitHub API rate limit and always reflects the latest pushed code.
+      const response = await fetch(`https://raw.githubusercontent.com/${Dashboard.UPDATE_REPO}/main/package.json`, {
+        headers: { 'User-Agent': 'free-tokens' },
       });
-      if (!response.ok) throw new Error(`GitHub API responded ${response.status}`);
-      const release = await response.json() as { tag_name?: string; html_url?: string; name?: string };
-      const latest = (release.tag_name || '').replace(/^v/, '');
+      if (!response.ok) throw new Error(`GitHub responded ${response.status}`);
+      const manifest = await response.json() as { version?: string };
+      const latest = (manifest.version || '').replace(/^v/, '');
       const current = this.version.replace(/^v/, '');
-      if (!latest) throw new Error(this.isEnglish ? 'No release tag found.' : '未找到发布标签。');
+      if (!latest) throw new Error(this.isEnglish ? 'No version found on the remote repository.' : '未能在远程仓库找到版本号。');
       if (compareVersions(latest, current) > 0) {
-        const label = release.name || release.tag_name || `v${latest}`;
-        const action = this.isEnglish ? 'Go to download' : '前往下载';
+        const action = this.isEnglish ? 'Open repository' : '打开仓库';
         const picked = await vscode.window.showInformationMessage(
           this.isEnglish
-            ? `A new version is available: ${label} (current v${current}).`
-            : `发现新版本：${label}（当前 v${current}）。`,
+            ? `A new version is available: v${latest} (current v${current}).`
+            : `发现新版本：v${latest}（当前 v${current}）。`,
           action,
         );
-        if (picked === action && release.html_url) {
-          await vscode.env.openExternal(vscode.Uri.parse(release.html_url));
+        if (picked === action) {
+          await vscode.env.openExternal(vscode.Uri.parse(`https://github.com/${Dashboard.UPDATE_REPO}`));
         }
         return;
       }

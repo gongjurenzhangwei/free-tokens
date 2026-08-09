@@ -11,8 +11,9 @@ export function dashboardView(webview: vscode.Webview, version: string, extensio
   const wechatQrUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'dist', 'wx-qrcode.svg'));
   // Default URL points to the repo's docs/free-tokens.html on GitHub raw. Owners can
   // change this by passing a different URL (e.g. self-hosted CDN) when calling
-  // dashboardView(), or by editing the constant below.
-  const defaultFreeTokensUrl = 'https://raw.githubusercontent.com/gongjurenzhangwei/byok-copilot/main/docs/free-tokens.html';
+  // dashboardView(), or by editing the constant below. We use "HEAD" instead of
+  // "main" because raw.githubusercontent.com caches branch refs; HEAD always resolves.
+  const defaultFreeTokensUrl = 'https://raw.githubusercontent.com/gongjurenzhangwei/byok-copilot/HEAD/docs/free-tokens.html';
   const freeTokensSrc = freeTokensUrl || defaultFreeTokensUrl;
 
   return `<!doctype html>

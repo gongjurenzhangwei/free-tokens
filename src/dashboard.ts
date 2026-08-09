@@ -89,7 +89,7 @@ export class Dashboard {
   private freeTokensUrl(): string {
     const configured = vscode.workspace.getConfiguration('byokCopilot').get<string>('freeTokensUrl', '').trim();
     if (configured) return configured;
-    return 'https://raw.githubusercontent.com/gongjurenzhangwei/byok-copilot/main/docs/free-tokens.html';
+    return 'https://raw.githubusercontent.com/gongjurenzhangwei/byok-copilot/HEAD/docs/free-tokens.html';
   }
 
   open(): void {

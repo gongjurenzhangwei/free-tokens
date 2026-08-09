@@ -103,6 +103,7 @@ const presets: Record<string, { provider: string; url: string; protocol: ApiProt
   agnes: { provider: 'Agnes AI', url: 'https://apihub.agnes-ai.com/v1', protocol: 'openai' },
   minimax: { provider: 'MiniMax', url: 'https://api.minimaxi.com/v1', protocol: 'openai' },
   opencode: { provider: 'OpenCode Zen', url: 'https://opencode.ai/zen/v1', protocol: 'openai' },
+  opencodeGo: { provider: 'OpenCode Go', url: 'https://opencode.ai/zen/go/v1', protocol: 'openai' },
   nvidia: { provider: 'NVIDIA NIM', url: 'https://integrate.api.nvidia.com/v1', protocol: 'openai' },
   openai: { provider: 'OpenAI', url: 'https://api.openai.com', protocol: 'responses' },
   anthropic: { provider: 'Anthropic', url: 'https://api.anthropic.com', protocol: 'anthropic' },
@@ -128,7 +129,7 @@ const copy = {
     protocol: '协议', localUsage: '30 天用量', state: '状态', available: '可用', disabled: '已停用', noModels: '无模型', noKey: '无密钥',
     edit: '编辑', remove: '删除', refresh: '刷新配额', refreshPlan: '刷新此 Plan', refreshing: '正在刷新…', lastRefreshed: (when: string) => `${when} 前更新`, refreshSoon: '每 5 分钟自动刷新', autoRefreshOn: '自动刷新已开启', autoRefreshOff: '自动刷新已暂停', modelLibrary: '模型库', modelLibraryDesc: '所有已接入并选择的模型',
     search: '搜索模型或供应商', noModelMatch: '没有匹配的模型', usageTitle: '用量与官方配额', usageDesc: '本地 30 天请求统计与供应商配额快照',
-    input: '输入', output: '输出', failures: '失败', quotaPending: '尚未获取官方配额', quotaUnsupported: '该供应商未提供官方配额接口', quotaUnsupportedHint: '已停止自动刷新。', modelInvalid: '模型 ID 不可用', modelInvalidHint: 'Function UUID 不能用于 Chat。请改用真实的 NIM 模型名，例如 meta/llama-3.1-70b-instruct。', settingsTitle: '控制台设置', settingsDesc: '调整模型可见性、状态栏和外观',
+    input: '输入', output: '输出', failures: '失败', quotaPending: '尚未获取官方配额', quotaUnsupported: '该供应商未提供官方配额接口', quotaUnsupportedHint: '已停止自动刷新。', goUsageHint: 'OpenCode 不开放用量查询接口，请在控制台查看实时用量：opencode.ai/auth', modelInvalid: '模型 ID 不可用', modelInvalidHint: 'Function UUID 不能用于 Chat。请改用真实的 NIM 模型名，例如 meta/llama-3.1-70b-instruct。', settingsTitle: '控制台设置', settingsDesc: '调整模型可见性、状态栏和外观',
     onlyAvailable: '仅显示可用模型', onlyAvailableDesc: '只向 Chat 暴露已启用、有模型且已保存 API Key 的 Plan。',
     configTitle: '配置备份', configDesc: '导出或导入所有 Plan、设置、用量记录与配额快照。',
     exportConfig: '导出', importConfig: '导入', includeApiKeys: '包含 API Key', includeApiKeysDesc: '把已保存的 API Key 一起打包到文件里；关闭后可分享脱敏配置。',
@@ -159,7 +160,7 @@ const copy = {
     protocol: 'Protocol', localUsage: '30-day usage', state: 'State', available: 'Available', disabled: 'Disabled', noModels: 'No models', noKey: 'No key',
     edit: 'Edit', remove: 'Delete', refresh: 'Refresh quota', refreshPlan: 'Refresh this plan', refreshing: 'Refreshing…', lastRefreshed: (when: string) => `Updated ${when} ago`, refreshSoon: 'Updates every 5 minutes', autoRefreshOn: 'Auto refresh on', autoRefreshOff: 'Auto refresh paused', modelLibrary: 'Model library', modelLibraryDesc: 'Every selected model across connected plans',
     search: 'Search models or providers', noModelMatch: 'No models match this search', usageTitle: 'Usage & official quota', usageDesc: 'Local 30-day request data and provider quota snapshots',
-    input: 'Input', output: 'Output', failures: 'Failures', quotaPending: 'Official quota not fetched', quotaUnsupported: 'Provider has no official quota endpoint', quotaUnsupportedHint: 'Auto refresh is disabled.', modelInvalid: 'Invalid model ID', modelInvalidHint: 'Function UUID cannot be used in Chat. Replace it with a real NIM model id like meta/llama-3.1-70b-instruct.', settingsTitle: 'Console settings', settingsDesc: 'Control model visibility, status bar, and appearance',
+    input: 'Input', output: 'Output', failures: 'Failures', quotaPending: 'Official quota not fetched', quotaUnsupported: 'Provider has no official quota endpoint', quotaUnsupportedHint: 'Auto refresh is disabled.', goUsageHint: 'OpenCode does not expose a usage API. See live usage in the console: opencode.ai/auth', modelInvalid: 'Invalid model ID', modelInvalidHint: 'Function UUID cannot be used in Chat. Replace it with a real NIM model id like meta/llama-3.1-70b-instruct.', settingsTitle: 'Console settings', settingsDesc: 'Control model visibility, status bar, and appearance',
     onlyAvailable: 'Only show available models', onlyAvailableDesc: 'Only expose enabled plans with models and a stored API key to Chat.',
     configTitle: 'Configuration backup', configDesc: 'Export or import all plans, settings, usage, and quota snapshots.',
     exportConfig: 'Export', importConfig: 'Import', includeApiKeys: 'Include API keys', includeApiKeysDesc: 'Bundle the stored API keys with the file. Disable to share an anonymised config.',
@@ -876,6 +877,15 @@ function Usage({ state, language, text }: any) {
               <div className="quota-list">
                 {quota.windows.map((window: any) => {
                   const percent = window.percentUsed ?? (window.limit ? (window.used || 0) / window.limit * 100 : 0);
+                  if (window.usageUnknown) {
+                    return (
+                      <div className="quota-row" key={window.id}>
+                        <div><span>{window.label}</span><strong>{window.unlimited ? '∞' : `≤ ${formatNumber(window.limit || 0, language)} ${window.unit}`}</strong></div>
+                        <div className="progress progress-unknown"><span style={{ width: '0%' }} /></div>
+                        <small className="quota-unknown-hint">{text.goUsageHint}</small>
+                      </div>
+                    );
+                  }
                   return (
                     <div className="quota-row" key={window.id}>
                       <div><span>{window.label}</span><strong>{window.unlimited ? '∞' : `${Math.round(percent)}%`}</strong></div>

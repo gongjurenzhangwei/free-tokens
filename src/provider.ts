@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { sendChat } from './api';
+import { sendChat, recordGoUsageLimitHit } from './api';
 import { PlanStore } from './store';
 
 function isLikelyNvidiaFunctionId(id: string): boolean {
@@ -124,6 +124,8 @@ export class ByokLanguageModelProvider implements vscode.LanguageModelChatProvid
       await this.store.addUsage({ planId, modelId, ...usage, requests: 1, success: true });
     } catch (error) {
       await this.store.addUsage({ planId, modelId, inputTokens: 0, outputTokens: 0, totalTokens: 0, requests: 1, success: false });
+      // OpenCode Go 达到限额时被动记录用量（429 GoUsageLimitError），让配额面板如实显示“已用满”。
+      recordGoUsageLimitHit(this.store, planId, error);
       // 抛 LanguageModelError（VS Code 官方 BYOK 错误类型）而不是普通 Error，
       // 避免 Chat 前端把它当作“未指定错误”而同时展示 message 与 cause 导致内容重复。
       throw new vscode.LanguageModelError(explainChatError(plan, model.id, error));

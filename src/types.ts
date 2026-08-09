@@ -16,6 +16,8 @@ export interface QuotaWindow {
   id: string;
   label: string;
   unlimited?: boolean;
+  /** 供应商提供上限但未开放当前用量查询（如 OpenCode Go）：前端只展示上限与提示，不再推算 0%。 */
+  usageUnknown?: boolean;
   used?: number;
   limit?: number;
   remaining?: number;

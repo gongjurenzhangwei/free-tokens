@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { ApiProtocol, ModelKind, PlanConfig, PlanModel, QuotaSnapshot, QuotaWindow } from './types';
+import type { PlanStore } from './store';
 
 interface ChatResult {
   inputTokens: number;
@@ -640,7 +641,54 @@ function minimaxQuotaWindows(payload: unknown): QuotaWindow[] {
   });
 }
 
+/* OpenCode（Zen / Go）：官方网关不提供主动查询用量的 API（/usage、/balance、/subscription 等端点均不存在）。
+   仅能获得订阅上限（美元值），当前已用额度需登录 opencode.ai/auth 控制台查看。
+   这里仅对明确是 Go 配套餐的 plan 返回静态限制窗口（避免把 Go 上限误用于 Zen 订阅），
+   前端以 usageUnknown 模式展示“上限 + 控制台提示”，避免误报 0%。 */
+function isOpenCodeGoPlan(plan: PlanConfig): boolean {
+  const hay = `${plan.provider} ${plan.baseUrl}`;
+  const goBaseUrl = /\/go(\/|$)/i.test(plan.baseUrl);
+  const goProvider = /(^|\s)go(\s|$)/i.test(plan.provider);
+  return /opencode/i.test(hay) && (goBaseUrl || goProvider);
+}
+
+/* OpenCode Go 配套餐官方限制（https://opencode.ai/docs/zh-cn/go/）：
+   5 小时滚动窗口 $12、每周 $30、每月 $60（以美元价值计费，实际请求数随模型而定）。 */
+const opencodeGoWindows = (): QuotaWindow[] => [
+  { id: 'go-5h', label: '5 小时（滚动）', limit: 12, unit: '美元', usageUnknown: true },
+  { id: 'go-weekly', label: '每周', limit: 30, unit: '美元', usageUnknown: true },
+  { id: 'go-monthly', label: '每月', limit: 60, unit: '美元', usageUnknown: true },
+];
+
+/* OpenCode Go 达到限额时，网关返回 HTTP 429，body 形如：
+   { type:"error", error:{ type:"GoUsageLimitError", message }, metadata:{ workspace, limitName:"5 hour"|"weekly"|"monthly" } }
+   这里把对应窗口标记为已用满（100%），让配额面板如实反映“当前不可用”。 */
+export function recordGoUsageLimitHit(store: PlanStore, planId: string, error: unknown): void {
+  const raw = error instanceof Error ? error.message : String(error);
+  if (!raw.includes('GoUsageLimitError')) return;
+  const bodyText = raw.match(/\{[\s\S]*\}/)?.[0];
+  if (!bodyText) return;
+  let body: { metadata?: { limitName?: unknown } };
+  try {
+    body = JSON.parse(bodyText) as { metadata?: { limitName?: unknown } };
+  } catch {
+    return;
+  }
+  const limitName = typeof body?.metadata?.limitName === 'string' ? body.metadata.limitName : '';
+  const windowId = ({ '5 hour': 'go-5h', weekly: 'go-weekly', monthly: 'go-monthly' } as Record<string, string>)[limitName];
+  if (!windowId) return;
+  const snapshot = store.getQuotaSnapshots().find((item) => item.planId === planId);
+  if (!snapshot || snapshot.source !== 'remote' || !snapshot.windows.length) return;
+  const windows = snapshot.windows.map((window) => window.id === windowId
+    ? { ...window, used: window.limit, remaining: 0, percentUsed: 100, usageUnknown: false }
+    : window);
+  void store.setQuotaSnapshot({ ...snapshot, windows, fetchedAt: Date.now() });
+}
+
 export async function fetchPlanQuota(plan: PlanConfig, apiKey: string): Promise<QuotaSnapshot | undefined> {
+  if (isOpenCodeGoPlan(plan)) {
+    return { planId: plan.id, fetchedAt: Date.now(), source: 'remote', windows: opencodeGoWindows() };
+  }
   if (!/minimax/i.test(`${plan.provider} ${plan.baseUrl}`)) return undefined;
   const response = await request('https://api.minimaxi.com/v1/token_plan/remains', apiKey, 'openai', { method: 'GET' });
   const payload = await response.json() as unknown;

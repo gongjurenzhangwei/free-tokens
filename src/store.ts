@@ -61,6 +61,9 @@ export class PlanStore {
   private readonly changeEmitter = new vscode.EventEmitter<void>();
   readonly onDidChange = this.changeEmitter.event;
 
+  /** 数据已外部修改（如注入演示数据）时通知监听方刷新。 */
+  notifyChanged(): void { this.changeEmitter.fire(); }
+
   constructor(private readonly context: vscode.ExtensionContext) {}
 
   getPlans(): PlanConfig[] {
@@ -410,7 +413,7 @@ export async function seedDemoData(context: vscode.ExtensionContext): Promise<vo
   await context.globalState.update(USAGE_KEY, demoUsage.slice(-5000));
   const settings = store.getSettings();
   await context.globalState.update(SETTINGS_KEY, { ...settings, filterAvailable: true });
-  store.changeEmitter.fire();
+  store.notifyChanged();
 }
 
 export const CONFIG_BUNDLE_SCHEMA = 'byok-copilot.config.bundle';

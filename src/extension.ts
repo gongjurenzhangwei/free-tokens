@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { Dashboard } from './dashboard';
 import { ByokLanguageModelProvider } from './provider';
-import { PlanStore } from './store';
+import { PlanStore, seedDemoData } from './store';
 import { buildUsagePanel, buildQuotaPanel } from './statusPanel';
 import { discoverModels } from './api';
 

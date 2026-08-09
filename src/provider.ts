@@ -14,18 +14,53 @@ function isInvalidModelId(baseUrl: string, modelId: string): boolean {
   return isNvidiaNim(baseUrl) && isLikelyNvidiaFunctionId(modelId);
 }
 
+/* 从形如 `HTTP 400: {"error":{"message":"..."}}` 的错误串里提取最内层的可读 message，便于分类判断。 */
+function readableError(raw: string): string {
+  const jsonMatch = raw.match(/\{[\s\S]*\}/);
+  if (jsonMatch) {
+    try {
+      const parsed = JSON.parse(jsonMatch[0]) as { error?: { message?: unknown }; message?: unknown };
+      const message = parsed?.error?.message ?? parsed?.message;
+      if (typeof message === 'string' && message.trim()) return message.trim();
+    } catch { /* 不是 JSON，忽略 */ }
+  }
+  return raw;
+}
+
 function explainChatError(plan: { provider: string; baseUrl: string; protocol: string }, modelId: string, error: unknown): string {
   const raw = error instanceof Error ? error.message : String(error);
   if (isInvalidModelId(plan.baseUrl, modelId)) {
     return `NVIDIA NIM：模型 ID "${modelId}" 是 Function UUID，无法在 Chat 中使用。\n请打开 NVIDIA NIM 控制台 → Models，复制形如 meta/llama-3.1-70b-instruct 的真实模型名（仅含字母、数字、连字符、斜杠），回到 免费 Token 编辑该 Plan 并替换该模型；旧模型 ID 已被自动从 Chat 选单中隐藏。\n\n原始错误：${raw}`;
   }
-  if (/HTTP 429|Rate limit exceeded|Too Many Requests|rate_limit/i.test(raw)) {
+  const text = readableError(raw);
+  if (/HTTP 429|Rate limit exceeded|Too Many Requests|rate_limit/i.test(text)) {
     const host = (() => { try { return new URL(plan.baseUrl).host.toLowerCase(); } catch { return ''; } })();
     const isKilo = host.includes('api.kilo.ai');
     const tip = isKilo
       ? 'Kilo Gateway 当前使用的是 OpenRouter 等供应商的共享档位，单一账户/IP 受限于每分钟请求数。\n建议：稍后再试（限速窗口每分钟重置），或在 Kilo 控制台绑定你自己的 OpenRouter/Anthropic/OpenAI Key 以绕过共享档位。'
       : '当前模型共享档位达到每分钟请求数上限。\n建议：稍候片刻再试，或切换到非共享档模型。';
     return `请求被供应商限速（HTTP 429）。\n${tip}\n\n原始错误：${raw}`;
+  }
+  const gateway = text.match(/Error from provider \(([^)]+)\)/)?.[1];
+  if (gateway || /Upstream request failed|Provider returned error/i.test(text)) {
+    const name = gateway ?? '中转网关';
+    return `请求被中转网关（${name}）转发时被上游拒绝（HTTP 400）。\n这通常是网关或其上游服务的问题，不是 免费 Token 插件的问题。\n\n可能原因与排查：\n1. 网关账户余额不足或免费额度已用完 —— 打开 ${name} 控制台查看余额与额度；\n2. 模型 "${modelId}" 对上游不可用 —— 确认该模型 ID 在网关目录中有效且已启用，或换一个模型再试；\n3. 网关上游服务临时故障 —— 稍等几分钟后重试。\n\n原始错误：${raw}`;
+  }
+  if (/HTTP 401|HTTP 403|Unauthorized|Invalid API key|incorrect api key|api key.*invalid|authentication/i.test(text)) {
+    return `认证失败（HTTP 401/403）：API Key 无效或已过期。\n请打开 免费 Token 控制台，重新生成该 Plan 的 API Key 并粘贴（注意不要有多余空格或换行），或换一个 Plan 再试。\n\n原始错误：${raw}`;
+  }
+  if (/HTTP 402|insufficient|credits|balance|paid model/i.test(text)) {
+    return `余额或配额不足（HTTP 402）：该模型需要付费或额度已用完。\n请打开供应商控制台充值或等待额度重置后重试。\n\n原始错误：${raw}`;
+  }
+  if (/HTTP 404|model_not_found|not found for account|: not found/i.test(text)) {
+    return `模型 "${modelId}" 不存在或未分配给此账户（HTTP 404）。\n请打开 免费 Token 控制台：确认模型 ID 拼写正确，或点击「重新连接」刷新模型列表。\n\n原始错误：${raw}`;
+  }
+  if (/HTTP 400|Unsupported parameter|Bad Request|invalid.*request/i.test(text)) {
+    return `供应商拒绝了请求参数（HTTP 400）。\n通常是因为模型不支持请求中的某些参数（如工具调用或图片输入）。\n建议：\n1. 换一个模型再试（当前模型：${modelId}）；\n2. 在 免费 Token 控制台确认该 Plan 的协议与 Base URL 匹配。\n\n原始错误：${raw}`;
+  }
+  if (/fetch failed|ENOTFOUND|ECONNREFUSED|ECONNRESET|ETIMEDOUT|network error|socket/i.test(text)) {
+    const host = (() => { try { return new URL(plan.baseUrl).host; } catch { return plan.baseUrl; } })();
+    return `网络连接失败：无法访问 ${host}。\n请检查网络、代理或防火墙设置后重试。\n\n原始错误：${raw}`;
   }
   return raw;
 }

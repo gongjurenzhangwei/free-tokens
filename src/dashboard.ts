@@ -269,7 +269,7 @@ export class Dashboard {
     }
   }
 
-  private notice(level: 'success' | 'error', message: string, planId?: string): void {
+  private notice(level: 'success' | 'error' | 'warning', message: string, planId?: string): void {
     this.panel?.webview.postMessage({ type: 'notice', level, message, planId });
   }
 

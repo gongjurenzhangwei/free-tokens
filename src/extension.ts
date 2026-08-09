@@ -87,6 +87,9 @@ export function activate(context: vscode.ExtensionContext): void {
     }),
     vscode.lm.registerLanguageModelChatProvider('byok-copilot', provider),
   );
+
+  /* 打开 VS Code 时自动检查更新（发现新版本才提示）。 */
+  void dashboard.autoCheckUpdate();
 }
 
 export function deactivate(): void {}

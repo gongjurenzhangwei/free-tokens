@@ -72,6 +72,8 @@ function compareVersions(a: string, b: string): number {
 
 export class Dashboard {
   private panel?: vscode.WebviewPanel;
+  /** 本会话内已在配置界面自动提示过的新版本号，防止重复弹出。 */
+  private autoPromptedVersion = '';
 
   constructor(
     private readonly store: PlanStore,
@@ -133,7 +135,10 @@ export class Dashboard {
 
   private async handle(message: any): Promise<void> {
     try {
-      if (message.type === 'ready') this.sync();
+      if (message.type === 'ready') {
+        this.sync();
+        void this.autoCheckUpdate();
+      }
       if (message.type === 'refreshAll') {
         const plans = this.store.getPlans();
         await Promise.allSettled(plans.map(async (plan) => {
@@ -335,7 +340,18 @@ export class Dashboard {
     this.notice('success', this.isEnglish ? 'Channel submitted to Feishu.' : '已通过飞书机器人提交，感谢推荐！');
   }
 
-  private async checkUpdate(): Promise<void> {
+  /**
+   * Auto-triggered update check (on VS Code startup / when the dashboard is
+   * opened). Runs in silent mode so it never bothers the user unless a new
+   * version is actually found.
+   */
+  async autoCheckUpdate(): Promise<void> {
+    await this.checkUpdate(true);
+  }
+
+  private async checkUpdate(silent = false): Promise<void> {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 10000);
     try {
       // Prefer the latest GitHub Release (tag_name): this is where the official
       // VSIX artifacts live, so the "open" action can point at the release page.
@@ -346,6 +362,7 @@ export class Dashboard {
       let openUrl = `https://github.com/${Dashboard.UPDATE_REPO}`;
       const releaseResponse = await fetch(`https://api.github.com/repos/${Dashboard.UPDATE_REPO}/releases/latest`, {
         headers: { 'User-Agent': 'free-tokens', Accept: 'application/vnd.github+json' },
+        signal: controller.signal,
       });
       if (releaseResponse.ok) {
         const release = await releaseResponse.json() as { tag_name?: string };
@@ -354,6 +371,7 @@ export class Dashboard {
       } else if (releaseResponse.status === 404 || releaseResponse.status === 403) {
         const response = await fetch(`https://raw.githubusercontent.com/${Dashboard.UPDATE_REPO}/main/package.json`, {
           headers: { 'User-Agent': 'free-tokens' },
+          signal: controller.signal,
         });
         if (!response.ok) throw new Error(`GitHub responded ${response.status}`);
         const manifest = await response.json() as { version?: string };
@@ -364,6 +382,12 @@ export class Dashboard {
       const current = this.version.replace(/^v/, '');
       if (!latest) throw new Error(this.isEnglish ? 'No version found on the remote repository.' : '未能在远程仓库找到版本号。');
       if (compareVersions(latest, current) > 0) {
+        // 自动模式下，若本会话已在配置界面提示过该版本则跳过（避免重复弹窗）。
+        if (silent && this.autoPromptedVersion === latest) return;
+        if (silent && this.panel) this.autoPromptedVersion = latest;
+        // 在配置界面（webview）弹出更新提示。
+        this.panel?.webview.postMessage({ type: 'updateResult', status: 'outdated', latest, current, openUrl });
+        // 同时在 VS Code 右下角提示。
         const action = this.isEnglish ? 'Open release' : '打开发布页';
         const picked = await vscode.window.showInformationMessage(
           this.isEnglish
@@ -376,10 +400,27 @@ export class Dashboard {
         }
         return;
       }
+      // 已是最新：自动模式静默，不打扰用户。
+      if (silent) return;
+      this.panel?.webview.postMessage({
+        type: 'updateResult',
+        status: 'uptodate',
+        latest,
+        current,
+        message: this.isEnglish ? 'You are up to date.' : '已是最新版本。',
+      });
       await vscode.window.showInformationMessage(this.isEnglish ? 'You are up to date.' : '已是最新版本。');
     } catch (error) {
+      if (silent) return;
       const reason = error instanceof Error ? error.message : String(error);
+      this.panel?.webview.postMessage({
+        type: 'updateResult',
+        status: 'error',
+        message: this.isEnglish ? `Update check failed: ${reason}` : `检查更新失败：${reason}`,
+      });
       await vscode.window.showErrorMessage(this.isEnglish ? `Update check failed: ${reason}` : `检查更新失败：${reason}`);
+    } finally {
+      clearTimeout(timer);
     }
   }
 

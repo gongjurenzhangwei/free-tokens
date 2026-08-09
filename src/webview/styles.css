@@ -256,6 +256,10 @@ svg { width: 18px; height: 18px; stroke-width: 1.8; }
 .toast { position: fixed; right: 18px; bottom: 18px; z-index: 80; display: flex; max-width: min(420px, calc(100vw - 36px)); align-items: center; gap: 10px; border: 1px solid color-mix(in srgb, var(--green) 45%, var(--line)); border-left: 3px solid var(--green); border-radius: 6px; padding: 13px 15px; background: var(--surface-strong); box-shadow: var(--shadow); font-size: 14px; }.toast svg { color: var(--green); }.toast.error { border-color: color-mix(in srgb, var(--danger) 45%, var(--line)); border-left-color: var(--danger); }.toast.error svg { color: var(--danger); }
 
 .submit-channel-modal-card { max-width: 560px; width: calc(100% - 32px); overflow: hidden; }
+.update-modal-card { max-width: 440px; width: calc(100% - 32px); overflow: hidden; }
+.update-modal-body { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 26px 24px 6px; text-align: center; }
+.update-modal-icon { display: grid; place-items: center; width: 54px; height: 54px; border-radius: 50%; color: var(--cyan); background: color-mix(in srgb, var(--cyan) 14%, transparent); }
+.update-modal-text { margin: 0; color: var(--text); font-size: 15px; line-height: 1.6; }
 .submit-channel-modal-body { display: flex; flex-direction: column; gap: 14px; padding: 20px 24px 0; }
 .submit-channel-desc { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.6; }
 .submit-channel-modal-body .submit-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }

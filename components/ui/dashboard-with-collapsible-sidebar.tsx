@@ -124,6 +124,7 @@ const copy = {
   'zh-CN': {
     overview: '概览', connections: '接入平台', models: '模型', usage: '用量与配额', settings: '设置', workspace: '控制中心',
     subtitle: '管理模型供应商、访问密钥与本地用量', newPlan: '接入 Plan', checkUpdate: '检查更新', enabledPlans: '已启用 Plan', availableModels: '可用模型',
+    updateAvailable: '扩展更新', updateAvailableTitle: '发现新版本', updateAvailableBody: (latest: string, current: string) => `当前版本 v${current}，最新版本 v${latest}。`, openRelease: '打开发布页', later: '稍后再说',
     apiCalls: 'API 调用', totalTokens: 'Token 总量', connectionsTitle: '连接管理', connectionsDesc: '供应商、协议、模型与凭据状态',
     noPlans: '尚未接入 Plan', noPlansDesc: '连接首个供应商后，模型会出现在 VS Code Chat 选择器中。', provider: '供应商',
     protocol: '协议', localUsage: '30 天用量', state: '状态', available: '可用', disabled: '已停用', noModels: '无模型', noKey: '无密钥',
@@ -155,6 +156,7 @@ const copy = {
   en: {
     overview: 'Overview', connections: 'Connections', models: 'Models', usage: 'Usage & quota', settings: 'Settings', workspace: 'Control center',
     subtitle: 'Manage model providers, credentials, and local usage', newPlan: 'Connect plan', checkUpdate: 'Check updates', enabledPlans: 'Enabled plans', availableModels: 'Available models',
+    updateAvailable: 'Extension update', updateAvailableTitle: 'A new version is available', updateAvailableBody: (latest: string, current: string) => `You are on v${current}; the latest release is v${latest}.`, openRelease: 'Open release', later: 'Later',
     apiCalls: 'API calls', totalTokens: 'Total tokens', connectionsTitle: 'Connections', connectionsDesc: 'Provider, protocol, models, and credential health',
     noPlans: 'No plans connected', noPlansDesc: 'Connect a provider to expose its models in the VS Code Chat picker.', provider: 'Provider',
     protocol: 'Protocol', localUsage: '30-day usage', state: 'State', available: 'Available', disabled: 'Disabled', noModels: 'No models', noKey: 'No key',
@@ -289,6 +291,7 @@ export function Example() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [editorPlan, setEditorPlan] = useState<PlanConfig | null | undefined>(undefined);
   const [notice, setNotice] = useState<{ level: string; message: string }>();
+  const [update, setUpdate] = useState<{ status: 'outdated' | 'uptodate' | 'error'; latest?: string; current?: string; openUrl?: string; message?: string }>();
   const [refreshing, setRefreshing] = useState(false);
   const [showSubmitChannel, setShowSubmitChannel] = useState(false);
   const language = state.settings.language === 'en' ? 'en' : 'zh-CN';
@@ -303,6 +306,15 @@ export function Example() {
       if (event.data.type === 'notice') {
         setNotice(event.data);
         window.setTimeout(() => setNotice(undefined), 5000);
+      }
+      if (event.data.type === 'updateResult') {
+        const data = event.data;
+        if (data.status === 'outdated') {
+          setUpdate(data);
+        } else {
+          setNotice({ level: data.status === 'error' ? 'error' : 'success', message: data.message || (data.status === 'error' ? (language === 'en' ? 'Update check failed.' : '检查更新失败。') : (language === 'en' ? 'You are up to date.' : '已是最新版本。')) });
+          window.setTimeout(() => setNotice(undefined), 5000);
+        }
       }
     };
     window.addEventListener('message', receive);
@@ -406,6 +418,27 @@ export function Example() {
       </main>
       {editorPlan !== undefined && <PlanEditor plan={editorPlan} language={language} text={text} close={() => setEditorPlan(undefined)} />}
       {showSubmitChannel && <SubmitChannelModal language={language} text={text} close={() => setShowSubmitChannel(false)} />}
+      {update && update.status === 'outdated' && (
+        <div className="modal-backdrop update-modal" role="dialog" aria-modal="true" onClick={(event) => { if (event.target === event.currentTarget) setUpdate(undefined); }}>
+          <div className="editor-modal update-modal-card">
+            <header>
+              <div>
+                <p>{text.updateAvailable}</p>
+                <h2>{text.updateAvailableTitle}</h2>
+              </div>
+              <button className="icon-button" onClick={() => setUpdate(undefined)} aria-label={language === 'en' ? 'Close' : '关闭'}><X size={18} /></button>
+            </header>
+            <div className="update-modal-body">
+              <div className="update-modal-icon"><Download size={26} /></div>
+              <p className="update-modal-text">{text.updateAvailableBody(update.latest || '', update.current || '')}</p>
+            </div>
+            <footer>
+              <button className="secondary-button" onClick={() => setUpdate(undefined)}>{text.later}</button>
+              <button className="primary-button" onClick={() => { vscode.postMessage({ type: 'openExternal', url: update.openUrl }); setUpdate(undefined); }}><Download size={16} strokeWidth={2} />{text.openRelease}</button>
+            </footer>
+          </div>
+        </div>
+      )}
       {notice && <div className={`toast ${notice.level}`}>{notice.level === 'success' ? <Check /> : <X />}<span>{notice.message}</span></div>}
     </div>
   );

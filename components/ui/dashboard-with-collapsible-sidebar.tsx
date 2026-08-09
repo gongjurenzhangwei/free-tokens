@@ -1095,12 +1095,21 @@ function SettingsView({ state, text, language, save }: any) {
 }
 
 function FreeTokensView({ language, text }: { language: 'zh-CN' | 'en'; text: any }) {
-  // The free-token card list lives in a standalone HTML file (docs/free-tokens.html)
-  // hosted externally so owners can update it without re-releasing the extension.
-  // We render it via iframe; the URL is injected from the host as a meta tag.
-  const freeTokensUrl = (typeof document !== 'undefined'
+  // The free-token card list is bundled into the extension and inlined as a
+  // JSON script (id="byok-freetokens-html"). We render it via an <iframe
+  // srcDoc>, which is reliable inside a webview: same-origin, offline, and not
+  // dependent on loading vscode-webview:// URIs or external hosts. The
+  // byok-freetokens-url meta tag (a custom URL from settings) is used only as a
+  // fallback when the bundled page cannot be read.
+  const inlineHtml = useMemo(() => {
+    if (typeof document === 'undefined') return '';
+    const el = document.getElementById('byok-freetokens-html');
+    if (!el || !el.textContent) return '';
+    try { return JSON.parse(el.textContent) as string; } catch { return ''; }
+  }, []);
+  const freeTokensUrl = !inlineHtml && typeof document !== 'undefined'
     ? document.querySelector('meta[name="byok-freetokens-url"]')?.getAttribute('content') || ''
-    : '');
+    : '';
   const [frameHeight, setFrameHeight] = useState<number | null>(null);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
@@ -1118,7 +1127,7 @@ function FreeTokensView({ language, text }: { language: 'zh-CN' | 'en'; text: an
     return () => window.removeEventListener('message', onMessage);
   }, []);
 
-  if (!freeTokensUrl) {
+  if (!inlineHtml && !freeTokensUrl) {
     // Fallback: keep the same message in both languages so a missing host
     // configuration never silently renders an empty page.
     return (
@@ -1141,14 +1150,15 @@ function FreeTokensView({ language, text }: { language: 'zh-CN' | 'en'; text: an
         <PanelHeading title={text.freetokensTitle} detail={text.freetokensDesc} />
         <iframe
           className="free-tokens-iframe"
-          src={freeTokensUrl}
+          srcDoc={inlineHtml || undefined}
+          src={inlineHtml ? undefined : (freeTokensUrl || undefined)}
           title={text.freetokensTitle}
           loading="lazy"
           referrerPolicy="no-referrer"
           style={{ height: frameHeight ? frameHeight + 'px' : undefined }}
           onLoad={() => {
-            // If the hosted page does not post its height (e.g. older cached copy),
-            // fall back to its scroll height when same-origin.
+            // srcDoc is same-origin, so we can always measure its height here;
+            // for a remote URL this fallback only works when same-origin.
             const doc = iframeRef.current?.contentDocument;
             if (doc && doc.body) setFrameHeight(doc.body.scrollHeight);
           }}

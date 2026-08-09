@@ -88,7 +88,13 @@ export class Dashboard {
    * render as raw source text instead of HTML).
    */
   private freeTokensUrl(): string {
-    return vscode.workspace.getConfiguration('byokCopilot').get<string>('freeTokensUrl', '').trim();
+    const configured = vscode.workspace.getConfiguration('byokCopilot').get<string>('freeTokensUrl', '').trim();
+    // raw.githubusercontent.com serves .html as text/plain with nosniff, so an
+    // iframe renders it as raw source text (a blank-looking page). If the owner
+    // previously configured one of these URLs, ignore it and fall back to the
+    // page bundled inside the extension.
+    if (/raw\.githubusercontent\.com/i.test(configured)) return '';
+    return configured;
   }
 
   open(): void {

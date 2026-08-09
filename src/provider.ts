@@ -17,7 +17,7 @@ function isInvalidModelId(baseUrl: string, modelId: string): boolean {
 function explainChatError(plan: { provider: string; baseUrl: string; protocol: string }, modelId: string, error: unknown): string {
   const raw = error instanceof Error ? error.message : String(error);
   if (isInvalidModelId(plan.baseUrl, modelId)) {
-    return `NVIDIA NIM：模型 ID "${modelId}" 是 Function UUID，无法在 Chat 中使用。\n请打开 NVIDIA NIM 控制台 → Models，复制形如 meta/llama-3.1-70b-instruct 的真实模型名（仅含字母、数字、连字符、斜杠），回到 BYOK COPILOT 编辑该 Plan 并替换该模型；旧模型 ID 已被自动从 Chat 选单中隐藏。\n\n原始错误：${raw}`;
+    return `NVIDIA NIM：模型 ID "${modelId}" 是 Function UUID，无法在 Chat 中使用。\n请打开 NVIDIA NIM 控制台 → Models，复制形如 meta/llama-3.1-70b-instruct 的真实模型名（仅含字母、数字、连字符、斜杠），回到 免费 Token 编辑该 Plan 并替换该模型；旧模型 ID 已被自动从 Chat 选单中隐藏。\n\n原始错误：${raw}`;
   }
   if (/HTTP 429|Rate limit exceeded|Too Many Requests|rate_limit/i.test(raw)) {
     const host = (() => { try { return new URL(plan.baseUrl).host.toLowerCase(); } catch { return ''; } })();
@@ -73,7 +73,7 @@ export class ByokLanguageModelProvider implements vscode.LanguageModelChatProvid
     const separator = modelInfo.id.indexOf(':');
     const planId = modelInfo.id.slice(0, separator); const modelId = modelInfo.id.slice(separator + 1);
     const plan = this.store.getPlan(planId); const model = plan?.models.find((item) => item.id === modelId); const apiKey = await this.store.getApiKey(planId);
-    if (!plan || !model || !apiKey) throw new Error('Plan 配置或 API Key 不完整，请打开 BYOK COPILOT 控制台检查。');
+    if (!plan || !model || !apiKey) throw new Error('Plan 配置或 API Key 不完整，请打开 免费 Token 控制台检查。');
     try {
       const usage = await sendChat(plan, model, apiKey, messages, options, progress, token);
       await this.store.addUsage({ planId, modelId, ...usage, requests: 1, success: true });

@@ -12,3 +12,5 @@ tailwind.config.js
 *.vsix
 preview/**
 preview-trend.html
+docs/**
+scripts/**

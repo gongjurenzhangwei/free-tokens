@@ -1,4 +1,4 @@
-# BYOK COPILOT
+# 免费 Token (Free Tokens)
 
 将 Token Plan、Coding Plan 或自定义兼容端点接入 VS Code Copilot Chat 的语言模型提供商扩展。
 
@@ -28,7 +28,7 @@
 4. 填写 Plan 名称、Base URL 和 API Key。
 5. 点击“获取模型”，扩展会按 Responses、Chat Completions、Anthropic 的顺序自动测试协议。
 6. 在模型列表中勾选要启用的模型并保存；未勾选的模型不会注册到 Chat 模型选择器。
-7. 在 Chat 模型选择器中选择 `BYOK COPILOT` 下的模型。
+7. 在 Chat 模型选择器中选择 `免费 Token` 下的模型。
 
 如果模型没有显示，请确认 Plan 已启用、模型发现成功，并在命令面板执行 `Developer: Reload Window`。
 

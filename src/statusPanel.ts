@@ -122,7 +122,7 @@ export function buildUsagePanel(store: PlanStore): vscode.MarkdownString {
     failures: sum.failures + item.failures,
   }), { requests: 0, input: 0, output: 0, total: 0, failures: 0 });
 
-  tooltip.appendMarkdown(`### $(pulse) BYOK COPILOT \`${english ? 'LAST 30D' : '最近 30 天'}\`\n\n`);
+  tooltip.appendMarkdown(`### $(pulse) 免费 Token \`${english ? 'LAST 30D' : '最近 30 天'}\`\n\n`);
   tooltip.appendMarkdown(usageNumbers([
     { label: english ? 'API calls' : 'API 调用', value: formatNumber(totals.requests, locale) },
     { label: english ? 'Input' : '输入', value: formatNumber(totals.input, locale) },
@@ -164,7 +164,7 @@ export function buildQuotaPanel(store: PlanStore, snapshot: NonNullable<ReturnTy
   const fetchedAt = formatTimeShort(snapshot.fetchedAt, english);
   const meta = english ? `Updated ${fetchedAt}` : `${fetchedAt} 前更新`;
 
-  tooltip.appendMarkdown(`### $(dashboard) BYOK COPILOT \`${english ? 'QUOTA' : '官方配额'}\`\n\n`);
+  tooltip.appendMarkdown(`### $(dashboard) 免费 Token \`${english ? 'QUOTA' : '官方配额'}\`\n\n`);
   tooltip.appendMarkdown(planCard({
     name,
     provider,

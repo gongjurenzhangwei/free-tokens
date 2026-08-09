@@ -1,6 +1,6 @@
 {
   "name": "byok-copilot",
-  "displayName": "BYOK COPILOT",
+  "displayName": "免费 Token (Free Tokens)",
   "description": "Connect token plans, coding plans, and custom model endpoints to VS Code Copilot Chat.",
   "version": "1.5.15",
   "publisher": "byok-copilot",
@@ -20,19 +20,29 @@
     "commands": [
       {
         "command": "byokCopilot.openDashboard",
-        "title": "BYOK COPILOT: Open Dashboard"
+        "title": "免费 Token: Open Dashboard"
       },
       {
         "command": "byokCopilot.seedDemoData",
-        "title": "BYOK COPILOT: Seed Demo Data"
+        "title": "免费 Token: Seed Demo Data"
       }
     ],
     "languageModelChatProviders": [
       {
         "vendor": "byok-copilot",
-        "displayName": "BYOK COPILOT"
+        "displayName": "免费 Token (Free Tokens)"
       }
-    ]
+    ],
+    "configuration": {
+      "title": "免费 Token",
+      "properties": {
+        "byokCopilot.freeTokensUrl": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "URL of the free-token recommendations page rendered inside the dashboard. Leave empty to use the page hosted at `docs/free-tokens.html` on the extension's GitHub `main` branch. Set a custom URL (e.g. self-hosted CDN) to override."
+        }
+      }
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run package",

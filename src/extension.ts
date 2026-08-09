@@ -21,7 +21,7 @@ export function activate(context: vscode.ExtensionContext): void {
     const english = settings.language === 'en';
     const locale = english ? 'en' : 'zh-CN';
     status.text = '$(key) BYOK';
-    status.tooltip = english ? 'Open BYOK COPILOT settings and usage' : '打开 BYOK COPILOT 配置与用量面板';
+    status.tooltip = english ? 'Open Free Tokens settings and usage' : '打开 免费 Token 配置与用量面板';
     if (settings.statusBarUsage === 'tokens') {
       const tokens = store.getUsage(30).reduce((total, usage) => total + usage.totalTokens, 0);
       status.text = `$(key) BYOK ${formatCompact(tokens, locale)} tok`;
@@ -81,7 +81,7 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('byokCopilot.openDashboard', () => dashboard.open()),
     vscode.commands.registerCommand('byokCopilot.seedDemoData', async () => {
       await seedDemoData(context);
-      vscode.window.showInformationMessage('BYOK COPILOT 演示数据已注入。');
+      vscode.window.showInformationMessage('免费 Token 演示数据已注入。');
       provider.refresh();
       dashboard.open();
     }),

@@ -1,7 +1,7 @@
 import {
   Activity, AlertTriangle, Archive, BarChart3, Boxes, Check, ChevronRight, CircleHelp, Cpu, Database,
   Download, ExternalLink, Eye, EyeOff, Gauge, Gift, Globe, Heart, KeyRound, Languages, LayoutDashboard, Menu, Moon, Network,
-  PackageOpen, PanelLeftClose, PanelLeftOpen, Pencil, Plus, RefreshCw, Search, Server, Settings, Share2, Smile, Sparkles,
+  PackageOpen, PanelLeftClose, PanelLeftOpen, Pencil, Plus, RefreshCw, Search, Send, Server, Settings, Share2, Smile, Sparkles,
   ShieldCheck, Sun, Trash2, Users, Wind, X, Zap,
 } from 'lucide-react';
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
@@ -135,9 +135,10 @@ const copy = {
     modelTrendTitle: '模型调用趋势', modelTrendDesc: '过去 24 小时每个模型的请求量 / Token 用量折线，每条线代表一个模型。', modelTrendEmpty: '暂无调用记录，发送第一条 Chat 请求后会显示折线。', trendLast24h: '最近 24 小时', trendHour: '小时', trendRequests: '次调用', trendTokens: 'Token', trendModeRequests: '调用量', trendModeTokens: 'Token 用量', trendRange24h: '24 小时', trendRange7d: '7 天', trendRange30d: '30 天', trendRangeAll: '全部', trendRangeCustom: '自定义', trendFrom: '起始', trendTo: '结束',
     free: '免费', onlyFree: '仅免费', selectFree: '选择免费', freeHint: '基于 NVIDIA NIM 公开免费档位白名单的本地标记，仅作为筛选提示。', freeUnknown: '档位未知',
     freetokens: '免费 Token', freetokensTitle: '免费 Token 推荐', freetokensDesc: '一些可以拿到免费 Token / 免费额度的供应商，注册即可使用。额度与限制请以官方页面为准。', freetokensQuota: '额度', freetokensInvite: '前往获取 →', freetokensDocs: '文档',
+    submitChannel: '提交免费 Token 渠道', submitChannelDesc: '发现好的免费 Token / 免费额度渠道？填个表单推荐给开发者，审核通过后会收录到上方列表。', channelName: '渠道名称', channelNamePh: '例如：某云厂商免费额度', channelUrl: '访问地址', channelUrlPh: 'https://example.com/register', channelQuota: '额度 / 优惠（可选）', channelQuotaPh: '例如：注册送 100 万 Token', channelNote: '补充说明（可选）', channelNotePh: '协议、限制、使用心得…', submit: '提交免费渠道', submitting: '正在提交…', channelNameRequired: '请填写渠道名称。', channelUrlRequired: '请填写访问地址。',
     statusBar: '状态栏显示', source: '配额来源', off: '仅 BYOK', tokens: '本地 Token', quota: '官方配额',
     theme: '主题', system: '跟随系统', light: '白天', dark: '暗黑', language: '界面语言', help: '帮助与信息', version: '扩展版本',
-    aboutTitle: '关于 BYOK COPILOT', aboutDesc: '版本、隐私与开发者信息',
+    aboutTitle: '关于 免费 Token', aboutDesc: '版本、隐私与开发者信息',
     versionInfo: '版本信息', currentVersion: '当前版本', security: '隐私与安全', changelog: '更新日志',
     developer: '开发者信息', developerName: '关于工具人张伟', developerSite: '访问官网',
     social: '社交媒体',
@@ -165,9 +166,10 @@ const copy = {
     modelTrendTitle: 'Model call trend', modelTrendDesc: 'Requests or tokens per model over the last 24 hours, one line per model.', modelTrendEmpty: 'No calls yet. Send a Chat request to populate this chart.', trendLast24h: 'Last 24h', trendHour: 'h', trendRequests: 'calls', trendTokens: 'tokens', trendModeRequests: 'Requests', trendModeTokens: 'Tokens', trendRange24h: '24h', trendRange7d: '7d', trendRange30d: '30d', trendRangeAll: 'All', trendRangeCustom: 'Custom', trendFrom: 'From', trendTo: 'To',
     free: 'Free', onlyFree: 'Only free', selectFree: 'Select free', freeHint: 'Local hint based on the NVIDIA NIM public free-tier allow list. Final tier is determined by your account.', freeUnknown: 'Tier unknown',
     freetokens: 'Free Tokens', freetokensTitle: 'Free Token Recommendations', freetokensDesc: 'Providers offering free tokens or free-tier quotas. Sign up and start using immediately. Limits are subject to the provider’s official page.', freetokensQuota: 'Quota', freetokensInvite: 'Get free access →', freetokensDocs: 'Docs',
+    submitChannel: 'Submit a free-token channel', submitChannelDesc: 'Know a great free-token / free-quota channel? Recommend it to the developer — it will be added to the list above after review.', channelName: 'Channel name', channelNamePh: 'e.g. Some cloud free quota', channelUrl: 'Access URL', channelUrlPh: 'https://example.com/register', channelQuota: 'Quota / bonus (optional)', channelQuotaPh: 'e.g. 1M free tokens on signup', channelNote: 'Extra notes (optional)', channelNotePh: 'Protocol, limits, usage tips…', submit: 'Submit free channel', submitting: 'Submitting…', channelNameRequired: 'Channel name is required.', channelUrlRequired: 'Access URL is required.',
     statusBar: 'Status bar', source: 'Quota source', off: 'BYOK only', tokens: 'Local tokens', quota: 'Official quota',
     theme: 'Theme', system: 'System', light: 'Light', dark: 'Dark', language: 'Language', help: 'Help & information', version: 'Extension version',
-    aboutTitle: 'About BYOK COPILOT', aboutDesc: 'Version, privacy, and developer info',
+    aboutTitle: 'About Free Tokens', aboutDesc: 'Version, privacy, and developer info',
     versionInfo: 'Version', currentVersion: 'Current version', security: 'Privacy & security', changelog: 'Changelog',
     developer: 'Developer', developerName: 'About Toolman Zhangwei', developerSite: 'Visit website',
     social: 'Social',
@@ -287,6 +289,7 @@ export function Example() {
   const [editorPlan, setEditorPlan] = useState<PlanConfig | null | undefined>(undefined);
   const [notice, setNotice] = useState<{ level: string; message: string }>();
   const [refreshing, setRefreshing] = useState(false);
+  const [showSubmitChannel, setShowSubmitChannel] = useState(false);
   const language = state.settings.language === 'en' ? 'en' : 'zh-CN';
   const text = copy[language];
   const resolvedTheme = state.settings.dashboardTheme === 'system'
@@ -349,7 +352,7 @@ export function Example() {
       <aside className={`sidebar ${sidebarOpen ? 'sidebar-open' : 'sidebar-closed'} ${mobileOpen ? 'mobile-open' : ''}`}>
         <div className="brand-row">
           <span className="brand-mark"><KeyRound /></span>
-          {sidebarOpen && <div className="brand-copy"><strong>BYOK COPILOT</strong><span>PROVIDER CONTROL</span></div>}
+          {sidebarOpen && <div className="brand-copy"><strong>免费 Token</strong><span>FREE TOKENS</span></div>}
           <button className="icon-button desktop-collapse" onClick={() => setSidebarOpen(!sidebarOpen)} aria-label={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}>
             {sidebarOpen ? <PanelLeftClose /> : <PanelLeftOpen />}
           </button>
@@ -385,6 +388,9 @@ export function Example() {
             <button className="secondary-button" onClick={() => vscode.postMessage({ type: 'checkUpdate' })} title={text.checkUpdate}>
               <Download size={16} strokeWidth={2} />{text.checkUpdate}
             </button>
+            <button className="secondary-button" onClick={() => setShowSubmitChannel(true)} title={text.submitChannel}>
+              <Gift size={16} strokeWidth={2} />{text.submit}
+            </button>
           </div>
         </header>
 
@@ -398,7 +404,76 @@ export function Example() {
         </div>
       </main>
       {editorPlan !== undefined && <PlanEditor plan={editorPlan} language={language} text={text} close={() => setEditorPlan(undefined)} />}
+      {showSubmitChannel && <SubmitChannelModal language={language} text={text} close={() => setShowSubmitChannel(false)} />}
       {notice && <div className={`toast ${notice.level}`}>{notice.level === 'success' ? <Check /> : <X />}<span>{notice.message}</span></div>}
+    </div>
+  );
+}
+
+function SubmitChannelModal({ language, text, close }: { language: 'zh-CN' | 'en'; text: any; close: () => void }) {
+  const isZh = language !== 'en';
+  const [channel, setChannel] = useState({ name: '', url: '', quota: '', note: '' });
+  const [submitting, setSubmitting] = useState(false);
+  const [channelError, setChannelError] = useState('');
+
+  const submitChannel = (event: FormEvent) => {
+    event.preventDefault();
+    const name = channel.name.trim();
+    const url = channel.url.trim();
+    if (!name) { setChannelError(text.channelNameRequired); return; }
+    if (!url || !/^https?:\/\//i.test(url)) { setChannelError(text.channelUrlRequired); return; }
+    setChannelError('');
+    setSubmitting(true);
+    vscode.postMessage({
+      type: 'submitFreeToken',
+      payload: { name, url, quota: channel.quota.trim(), note: channel.note.trim() },
+    });
+    setChannel({ name: '', url: '', quota: '', note: '' });
+    close();
+  };
+
+  return (
+    <div className="modal-backdrop submit-channel-modal" role="dialog" aria-modal="true"
+      onClick={(event) => { if (event.target === event.currentTarget) close(); }}>
+      <div className="editor-modal submit-channel-modal-card">
+        <header>
+          <div>
+            <p>{text.freetokens}</p>
+            <h2>{text.submitChannel}</h2>
+          </div>
+          <button className="icon-button" onClick={close} aria-label={isZh ? '关闭' : 'Close'}><X size={18} /></button>
+        </header>
+        <form className="submit-channel-modal-body" onSubmit={submitChannel} noValidate>
+          <p className="submit-channel-desc">{text.submitChannelDesc}</p>
+          <label className="submit-field">
+            <span>{text.channelName} <i>*</i></span>
+            <input type="text" value={channel.name} placeholder={text.channelNamePh}
+              onChange={(event) => setChannel((prev) => ({ ...prev, name: event.target.value }))} />
+          </label>
+          <label className="submit-field">
+            <span>{text.channelUrl} <i>*</i></span>
+            <input type="url" value={channel.url} placeholder={text.channelUrlPh}
+              onChange={(event) => setChannel((prev) => ({ ...prev, url: event.target.value }))} />
+          </label>
+          <label className="submit-field">
+            <span>{text.channelQuota}</span>
+            <input type="text" value={channel.quota} placeholder={text.channelQuotaPh}
+              onChange={(event) => setChannel((prev) => ({ ...prev, quota: event.target.value }))} />
+          </label>
+          <label className="submit-field">
+            <span>{text.channelNote}</span>
+            <textarea rows={3} value={channel.note} placeholder={text.channelNotePh}
+              onChange={(event) => setChannel((prev) => ({ ...prev, note: event.target.value }))} />
+          </label>
+          {channelError && <span className="error-text">{channelError}</span>}
+          <footer>
+            <button className="secondary-button" type="button" onClick={close}>{isZh ? '取消' : 'Cancel'}</button>
+            <button className="primary-button" type="submit" disabled={submitting}>
+              <Send size={16} strokeWidth={2} />{submitting ? text.submitting : text.submit}
+            </button>
+          </footer>
+        </form>
+      </div>
     </div>
   );
 }
@@ -923,16 +998,16 @@ function AboutPanel({ language, text }: { language: 'zh-CN' | 'en'; text: any })
             <header>
               <div>
                 <p>{text.security}</p>
-                <h2>{isZh ? 'BYOK COPILOT 隐私与安全说明' : 'BYOK COPILOT Privacy & Security'}</h2>
+                <h2>{isZh ? '免费 Token 隐私与安全说明' : 'Free Tokens Privacy & Security'}</h2>
               </div>
               <button className="icon-button" onClick={() => setShowPolicy(false)} aria-label={isZh ? '关闭' : 'Close'}><X size={18} /></button>
             </header>
             <div className="about-policy-modal-body">
               {isZh ? (
                 <>
-                  <p>BYOK COPILOT（"本扩展"）以"自带密钥（BYOK）"为核心原则，致力于让模型调用过程中的所有敏感数据都保留在你自己的设备上。下面是与隐私和安全相关的关键条款：</p>
+                  <p>免费 Token（"本扩展"）以"自带密钥（BYOK）"为核心原则，致力于让模型调用过程中的所有敏感数据都保留在你自己的设备上。下面是与隐私和安全相关的关键条款：</p>
                   <ol>
-                    <li><strong>本地优先的数据存储</strong>：所有 Plan、设置、用量记录、配额快照与 kind 标记均保存在本工作区的 <code>globalState</code> 中；不会上传到 BYOK COPILOT 任何服务器。</li>
+                    <li><strong>本地优先的数据存储</strong>：所有 Plan、设置、用量记录、配额快照与 kind 标记均保存在本工作区的 <code>globalState</code> 中；不会上传到 免费 Token 任何服务器。</li>
                     <li><strong>API Key 的安全保存</strong>：你填写的所有 API Key 一律写入 VS Code 的 <code>SecretStorage</code>（操作系统级 Keychain / DPAPI），不在明文配置文件中出现。</li>
                     <li><strong>导出文件加密</strong>：当你导出包含 API Key 的配置时，扩展会用 AES-256-GCM 对每个 Key 单独加密；密钥由 scrypt 从本工作区专属随机 passphrase 派生，并保存于 <code>SecretStorage</code>。导入时需提供 passphrase 才能恢复 Key。</li>
                     <li><strong>不收集遥测</strong>：本扩展不会发送任何使用统计、模型输入/输出内容或设备信息到第三方服务器；网络请求仅限于你显式连接的供应商 Base URL。</li>
@@ -943,9 +1018,9 @@ function AboutPanel({ language, text }: { language: 'zh-CN' | 'en'; text: any })
                 </>
               ) : (
                 <>
-                  <p>BYOK COPILOT ("the extension") follows a Bring-Your-Own-Key (BYOK) approach so sensitive data stays on your machine. Key privacy and security terms:</p>
+                  <p>Free Tokens ("the extension") follows a Bring-Your-Own-Key (BYOK) approach so sensitive data stays on your machine. Key privacy and security terms:</p>
                   <ol>
-                    <li><strong>Local-first storage.</strong> Plans, settings, usage records, quota snapshots, and kind metadata live in your workspace's <code>globalState</code>. Nothing is uploaded to BYOK COPILOT servers.</li>
+                    <li><strong>Local-first storage.</strong> Plans, settings, usage records, quota snapshots, and kind metadata live in your workspace's <code>globalState</code>. Nothing is uploaded to Free Tokens servers.</li>
                     <li><strong>API keys in SecretStorage.</strong> Every API key is written to VS Code's <code>SecretStorage</code> (OS-level Keychain / DPAPI). Plain-text credentials are never persisted.</li>
                     <li><strong>Encrypted exports.</strong> Backups that include API keys are encrypted with AES-256-GCM, one key per plan. The encryption key is derived with scrypt from a workspace-local passphrase stored in <code>SecretStorage</code>. The passphrase is required to restore keys on import.</li>
                     <li><strong>No telemetry.</strong> The extension does not send usage stats, prompts, completions, or device info anywhere. Outbound network traffic is limited to the Base URLs you explicitly connect.</li>
@@ -1020,113 +1095,56 @@ function SettingsView({ state, text, language, save }: any) {
 }
 
 function FreeTokensView({ language, text }: { language: 'zh-CN' | 'en'; text: any }) {
-  const isZh = language !== 'en';
-  const faviconFor = (domain: string): string => `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
-  const [failed, setFailed] = useState<Record<string, boolean>>({});
-  const providers = [
-    {
-      name: 'TokenRhythm (基元律动)', Icon: Sparkles, tone: '#8b5cf6', domain: 'tokenrhythm.studio',
-      url: 'https://tokenrhythm.studio/i/rf_tr_yv5C7DZK2ykhctUVC7FqahBa',
-      docs: 'https://tokenrhythm.studio/docs/api-integration',
-      desc: isZh
-        ? '邀请好友限时活动继续延长，使用邀请链接注册即可免费领取 68 元 Token 额度，体验多模型聚合、智能路由与 OpenSquilla 新功能。'
-        : 'Invite-friends promo extended. Register via the invite link to receive ¥68 in free token credits, and try multi-model aggregation, smart routing, and the new OpenSquilla features.',
-      quota: isZh ? '新用户注册即送 68 元 Token 额度' : 'New users get ¥68 token credit on signup',
-      tag: isZh ? '送 68 元额度' : '¥68 free credit',
-    },
-    {
-      name: 'Share LLM (额度共享)', Icon: Share2, tone: '#0ea5e9', domain: 'sharellm.cn',
-      url: 'https://sharellm.cn/sign-up?aff=WeRt',
-      docs: 'https://sharellm.cn/about',
-      desc: isZh
-        ? '注册即享每周 300 次免费调用额度；同时也可以把自己用不完的 API Key、Codex、Gemini、Grok 等额度在平台上分享，按量赚取收益，平台仅抽 8%。所有模型经过真伪校验，密钥加密存储。'
-        : 'Free signup with 300 calls per week. You can also share your unused API keys / Codex / Gemini / Grok quotas on the platform to earn revenue — the platform takes only 8%. Every model is authenticity-verified and credentials are encrypted at rest.',
-      quota: isZh ? '免费注册 + 每周 300 次调用 + 闲置额度可变现' : 'Free signup + 300 calls/week + earn from idle quotas',
-      tag: isZh ? '分享可赚收益' : 'Share & earn',
-    },
-    {
-      name: 'OpenCode Zen', Icon: Boxes, tone: '#a78bfa', domain: 'opencode.ai',
-      url: 'https://opencode.ai/zen',
-      docs: 'https://opencode.ai/docs',
-      desc: isZh
-        ? '为 AI 编程 Agent 优化的模型网关，注册即送免费额度；同时支持 Claude、GPT、Gemini 等多种主流模型，按协议自动分流，可直接当作 BYOK 后端接入。'
-        : 'Model gateway tuned for AI coding agents — free credits on signup. Supports Claude, GPT, Gemini and more with automatic protocol routing, and plugs straight into BYOK as a backend.',
-      quota: isZh ? '新用户注册送免费额度' : 'Free credits on signup',
-      tag: isZh ? 'AI 编程' : 'AI coding',
-    },
-    {
-      name: 'AGNES AI', Icon: Heart, tone: '#f43f5e', domain: 'agnes-ai.com',
-      url: 'https://platform.agnes-ai.com',
-      docs: 'https://apihub.agnes-ai.com',
-      desc: isZh
-        ? '来自全球前十 AI 实验室 SapiensAI 的统一模型平台，注册即可免费畅享文本、图像、视频等前沿模型，OpenAI 协议兼容，可直接 BYOK 接入。'
-        : 'Unified model platform from SapiensAI (a top-10 AI lab). Free access to cutting-edge text, image and video models; OpenAI-compatible and ready to plug into BYOK.',
-      quota: isZh ? '免费畅享前沿模型' : 'Free access to frontier models',
-      tag: isZh ? '世界级 AI' : 'Frontier AI',
-    },
-    {
-      name: 'Kilo Gateway', Icon: Server, tone: '#06b6d4', domain: 'kilo.ai',
-      url: 'https://kilo.ai/gateway',
-      docs: 'https://kilo.ai/docs',
-      desc: isZh
-        ? '开源 AI 编程网关，500+ 模型零加价；支持自带 Key、自动路由免费档模型，注册即用，可与 BYOK 共享一个 Base URL。'
-        : 'Open-source AI coding gateway with 500+ models at zero markup. BYOK-friendly, auto-routes free tiers, and a single base URL works with BYOK out of the box.',
-      quota: isZh ? '零加价 + 自动路由免费档' : 'Zero markup + auto-routes free tiers',
-      tag: isZh ? '零加价' : 'Zero markup',
-    },
-    {
-      name: 'NVIDIA NIM', Icon: Cpu, tone: '#76b900', domain: 'nvidia.com',
-      url: 'https://integrate.api.nvidia.com',
-      docs: 'https://docs.nvidia.com/nim/',
-      desc: isZh
-        ? '提供 Llama、Mistral、DeepSeek、Qwen 等开源模型的免费 API Key；每个模型每月约 1000 次免费请求。'
-        : 'Public free API key grants access to Llama, Mistral, DeepSeek, Qwen and other open models with around 1,000 free requests per model per month.',
-      quota: isZh ? '每个模型每月约 1000 次免费请求' : '~1,000 free requests / model / month',
-      tag: isZh ? '官方免费档' : 'Official free tier',
-    },
-    {
-      name: 'OpenRouter', Icon: Network, tone: '#7c3aed', domain: 'openrouter.ai',
-      url: 'https://openrouter.ai',
-      docs: 'https://openrouter.ai/models?max_price=0',
-      desc: isZh
-        ? 'OpenRouter 提供标有 :free 后缀的完全免费模型，注册即拿 Key，有调用频率限制。'
-        : 'OpenRouter hosts many :free models that are completely free; sign up to grab a key. Rate limits apply.',
-      quota: isZh ? '免费模型 20 次/分钟' : '20 req/min on free models',
-      tag: isZh ? '社区推荐' : 'Community pick',
-    },
-  ];
+  // The free-token card list lives in a standalone HTML file (docs/free-tokens.html)
+  // hosted externally so owners can update it without re-releasing the extension.
+  // We render it via iframe; the URL is injected from the host as a meta tag.
+  const freeTokensUrl = (typeof document !== 'undefined'
+    ? document.querySelector('meta[name="byok-freetokens-url"]')?.getAttribute('content') || ''
+    : '');
+
+  if (!freeTokensUrl) {
+    // Fallback: keep the same message in both languages so a missing host
+    // configuration never silently renders an empty page.
+    return (
+      <div className="settings-layout">
+        <section className="glass-panel free-tokens-panel">
+          <PanelHeading title={text.freetokensTitle} detail={text.freetokensDesc} />
+          <p className="about-block">
+            {language === 'en'
+              ? 'The free-token recommendations page is not configured. Set "byokCopilot.freeTokensUrl" in VS Code settings or update docs/free-tokens.html in the repository.'
+              : '免费 Token 推荐页未配置。请在 VS Code 设置中填写 "byokCopilot.freeTokensUrl"，或在仓库中更新 docs/free-tokens.html。'}
+          </p>
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div className="settings-layout">
       <section className="glass-panel free-tokens-panel">
         <PanelHeading title={text.freetokensTitle} detail={text.freetokensDesc} />
-        <div className="free-tokens-grid">
-          {providers.map(({ name, Icon, tone, domain, url, docs, desc, quota, tag }) => (
-            <article key={name} className="free-token-card">
-              <header className="free-token-head">
-                <span className="free-token-icon" style={{ color: tone, background: tone + '1a' }} aria-hidden>
-                  {failed[name]
-                    ? <Icon size={20} strokeWidth={2} />
-                    : <img className="free-token-favicon" src={faviconFor(domain)} alt="" width={20} height={20} loading="lazy" onError={() => setFailed(prev => ({ ...prev, [name]: true }))} />}
-                </span>
-                <div className="free-token-titles">
-                  <strong>{name}</strong>
-                  <span className="free-token-tag" style={{ color: tone, background: tone + '1a', borderColor: tone + '33' }}>{tag}</span>
-                </div>
-              </header>
-              <p className="free-token-desc">{desc}</p>
-              <div className="free-token-quota"><Zap /><span>{text.freetokensQuota}: {quota}</span></div>
-              <div className="free-token-actions">
-                <a className="primary-button" href={url} target="_blank" rel="noopener noreferrer">{text.freetokensInvite}</a>
-                <a className="secondary-button" href={docs} target="_blank" rel="noopener noreferrer">{text.freetokensDocs}</a>
-              </div>
-              <code className="free-token-url">{url}</code>
-            </article>
-          ))}
-        </div>
+        <iframe
+          className="free-tokens-iframe"
+          src={freeTokensUrl}
+          title={text.freetokensTitle}
+          loading="lazy"
+          referrerPolicy="no-referrer"
+        />
       </section>
     </div>
   );
+}
+
+function _legacyFreeTokensView({ language, text }: { language: 'zh-CN' | 'en'; text: any }) {
+  // Kept for reference; the production FreeTokensView above renders an iframe
+  // backed by docs/free-tokens.html. The provider list below is preserved so
+  // a future maintainer can copy data into the standalone HTML.
+  const isZh = language !== 'en';
+  const _faviconFor = (domain: string): string => `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+  return null; // The remaining legacy free-token provider list and JSX were intentionally
+  //            removed; the production FreeTokensView above renders an iframe
+  //            backed by docs/free-tokens.html. See git history for the old
+  //            inlined implementation if you need to migrate the data.
 }
 
 function SettingRow({ icon: Icon, title, detail, children }: any) { return <div className="setting-row"><span className="setting-icon"><Icon /></span><div className="setting-copy"><strong>{title}</strong>{detail && <small>{detail}</small>}</div><div className="setting-control">{children}</div></div>; }

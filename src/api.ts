@@ -355,7 +355,7 @@ async function requestFirst(plan: PlanConfig, apiKey: string, suffix: string, in
 function guidanceFor(baseUrl: string, suffix: string): string {
   const host = (() => { try { return new URL(baseUrl).host.toLowerCase(); } catch { return ''; } })();
   if (host.includes('integrate.api.nvidia.com')) {
-    if (suffix === '/chat/completions') return 'NVIDIA NIM：请在 build.nvidia.com 控制台确认该模型 ID 已在 Models 页面启用且分配给了当前账户；BYOK COPILOT 只能转发 /v1/chat/completions，不会改写 model 字段。';
+    if (suffix === '/chat/completions') return 'NVIDIA NIM：请在 build.nvidia.com 控制台确认该模型 ID 已在 Models 页面启用且分配给了当前账户；免费 Token 只能转发 /v1/chat/completions，不会改写 model 字段。';
     if (suffix === '/responses') return 'NVIDIA NIM 不提供 OpenAI Responses API，请改用 Chat Completions 协议。';
   }
   return '';

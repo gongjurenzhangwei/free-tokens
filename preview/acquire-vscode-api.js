@@ -262,7 +262,7 @@
           const url = URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
-          a.download = 'byok-copilot-config-' + new Date().toISOString().slice(0, 10) + '.json';
+          a.download = 'free-tokens-config-' + new Date().toISOString().slice(0, 10) + '.json';
           a.click();
           URL.revokeObjectURL(url);
           send({ type: 'notice', level: 'success', message: '配置已导出到下载文件夹。' });

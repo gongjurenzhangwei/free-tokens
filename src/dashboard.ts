@@ -20,7 +20,7 @@ const messages: Record<'zh-CN' | 'en', Record<DashboardMessageKey, string>> = {
     exportFail: '导出失败：{reason}',
     importSuccess: '导入完成：新增 {added} 个，合并 {reused} 个，覆盖 {overwritten} 个，跳过 {skipped} 个，导入 {keysImported} 个密钥。',
     importFail: '导入失败：{reason}',
-    exportPrompt: '导出 BYOK COPILOT 配置',
+    exportPrompt: '导出 免费 Token 配置',
     replacePrompt: '替换全部现有 Plan',
     mergePrompt: '按 ID 合并同名 Plan',
     skipPrompt: '跳过同名 Plan',
@@ -43,7 +43,7 @@ const messages: Record<'zh-CN' | 'en', Record<DashboardMessageKey, string>> = {
     exportFail: 'Export failed: {reason}',
     importSuccess: 'Import finished: {added} added, {reused} merged, {overwritten} replaced, {skipped} skipped, {keysImported} keys imported.',
     importFail: 'Import failed: {reason}',
-    exportPrompt: 'Export BYOK COPILOT configuration',
+    exportPrompt: 'Export Free Tokens configuration',
     replacePrompt: 'Replace existing plans',
     mergePrompt: 'Merge plans with the same ID',
     skipPrompt: 'Skip plans with the same ID',
@@ -80,18 +80,30 @@ export class Dashboard {
     private readonly extensionUri: vscode.Uri,
   ) {}
 
+  /**
+   * URL of the externally-hosted free-token recommendations page. Owners can
+   * override the default (which points to docs/free-tokens.html on this repo's
+   * main branch) by setting `byokCopilot.freeTokensUrl` in VS Code settings.
+   * Leave it empty (default) to use the repo-hosted HTML.
+   */
+  private freeTokensUrl(): string {
+    const configured = vscode.workspace.getConfiguration('byokCopilot').get<string>('freeTokensUrl', '').trim();
+    if (configured) return configured;
+    return 'https://raw.githubusercontent.com/gongjurenzhangwei/byok-copilot/main/docs/free-tokens.html';
+  }
+
   open(): void {
     if (this.panel) {
       this.panel.reveal();
       this.sync();
       return;
     }
-    this.panel = vscode.window.createWebviewPanel('byokCopilot.dashboard', 'BYOK COPILOT', vscode.ViewColumn.One, {
+    this.panel = vscode.window.createWebviewPanel('byokCopilot.dashboard', '免费 Token', vscode.ViewColumn.One, {
       enableScripts: true,
       retainContextWhenHidden: true,
       localResourceRoots: [vscode.Uri.joinPath(this.extensionUri, 'dist')],
     });
-    this.panel.webview.html = dashboardView(this.panel.webview, this.version, this.extensionUri);
+    this.panel.webview.html = dashboardView(this.panel.webview, this.version, this.extensionUri, this.freeTokensUrl());
     this.panel.onDidDispose(() => { this.panel = undefined; });
     this.panel.webview.onDidReceiveMessage((message) => this.handle(message));
     this.sync();
@@ -225,6 +237,10 @@ export class Dashboard {
         await this.checkUpdate();
         return;
       }
+      if (message.type === 'submitFreeToken') {
+        await this.submitFreeToken(message.payload);
+        return;
+      }
       
       if (message.type === 'delete') {
         const plan = this.store.getPlan(message.id);
@@ -260,6 +276,60 @@ export class Dashboard {
   /** GitHub repository used for update checks (owner/repo). Matches the `git remote` in this repo. */
   private static readonly UPDATE_REPO = 'gongjurenzhangwei/byok-copilot';
 
+  /**
+   * Feishu (Lark) group-bot webhook, XOR+Base64 obfuscated so it never appears
+   * in plaintext in the source. Regenerate with:
+   *   node scripts/encrypt-feishu-webhook.js "https://open.feishu.cn/open-apis/bot/v2/hook/xxxx"
+   * NOTE: this is obfuscation, not real security — the key ships with the code.
+   */
+  private static readonly FEISHU_WEBHOOK_KEY = '0ea7c0d9d17470a5e45affee564e0ade';
+  private static readonly FEISHU_WEBHOOK_ENC = 'ZtO0qaJOX4qLKpqAeChvt33PtfeyGl/KlD+Rwzc+Y60hxa+t/gJCiow1kIV5ezrqN5H36bJZFsHVbNLaNC1s8zaS9Oz8RkGd1WidjGQoaOdv';
+
+  private static feishuWebhook(): string {
+    const key = Buffer.from(Dashboard.FEISHU_WEBHOOK_KEY, 'hex');
+    const data = Buffer.from(Dashboard.FEISHU_WEBHOOK_ENC, 'base64');
+    const out = Buffer.alloc(data.length);
+    for (let i = 0; i < data.length; i++) out[i] = data[i] ^ key[i % key.length];
+    return out.toString('utf8');
+  }
+
+  private async submitFreeToken(payload: unknown): Promise<void> {
+    const { name, url, quota, note } = (payload ?? {}) as { name?: string; url?: string; quota?: string; note?: string };
+    const cleanName = (name || '').trim();
+    const cleanUrl = (url || '').trim();
+    if (!cleanName || !cleanUrl) {
+      throw new Error(this.isEnglish ? 'Channel name and URL are required.' : '请填写渠道名称和访问地址。');
+    }
+    if (!/^https?:\/\//i.test(cleanUrl)) {
+      throw new Error(this.isEnglish ? 'Please enter a valid URL starting with http(s)://' : '请输入以 http(s):// 开头的有效地址。');
+    }
+    const webhook = Dashboard.feishuWebhook();
+    if (!webhook.startsWith('https://')) {
+      throw new Error(this.isEnglish ? 'Feishu webhook is not configured.' : '飞书 webhook 未配置。');
+    }
+    const response = await fetch(webhook, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        msg_type: 'interactive',
+        card: {
+          header: { title: { tag: 'plain_text', content: `新免费 Token 渠道投稿` }, template: 'blue' },
+          elements: [
+            { tag: 'div', text: { tag: 'lark_md', content: `**渠道名称：** ${cleanName}` } },
+            { tag: 'div', text: { tag: 'lark_md', content: `**访问地址：** ${cleanUrl}` } },
+            ...(quota ? [{ tag: 'div', text: { tag: 'lark_md', content: `**额度/优惠：** ${quota.trim()}` } }] : []),
+            ...(note ? [{ tag: 'div', text: { tag: 'lark_md', content: `**补充说明：** ${note.trim()}` } }] : []),
+            { tag: 'note', elements: [{ tag: 'plain_text', content: `来自 免费 Token Dashboard 提交` }] },
+          ],
+        },
+      }),
+    });
+    if (!response.ok) {
+      throw new Error(this.isEnglish ? `Feishu webhook responded ${response.status}.` : `飞书 webhook 返回 ${response.status}。`);
+    }
+    this.notice('success', this.isEnglish ? 'Channel submitted to Feishu.' : '已通过飞书机器人提交，感谢推荐！');
+  }
+
   private async checkUpdate(): Promise<void> {
     try {
       const response = await fetch(`https://api.github.com/repos/${Dashboard.UPDATE_REPO}/releases/latest`, {
@@ -293,10 +363,10 @@ export class Dashboard {
 
   private async handleExport(includeApiKeys: boolean): Promise<void> {
     try {
-      const defaultName = `byok-copilot-config${includeApiKeys ? '-with-keys' : ''}-${new Date().toISOString().slice(0, 10)}.byok.json`;
+      const defaultName = `free-tokens-config${includeApiKeys ? '-with-keys' : ''}-${new Date().toISOString().slice(0, 10)}.json`;
       const uri = await vscode.window.showSaveDialog({
         defaultUri: vscode.Uri.file(defaultName),
-        filters: { 'BYOK COPILOT Config': ['json'], JSON: ['json'] },
+        filters: { '免费 Token Config': ['json'], JSON: ['json'] },
         title: this.text('exportPrompt'),
       });
       if (!uri) return;
@@ -318,7 +388,7 @@ export class Dashboard {
     try {
       const picked = await vscode.window.showOpenDialog({
         canSelectMany: false,
-        filters: { 'BYOK COPILOT Config': ['json'], JSON: ['json'] },
+        filters: { '免费 Token Config': ['json'], JSON: ['json'] },
         title: this.text('exportPrompt'),
       });
       if (!picked?.length) return;

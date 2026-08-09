@@ -129,7 +129,7 @@ const copy = {
     noPlans: '尚未接入 Plan', noPlansDesc: '连接首个供应商后，模型会出现在 VS Code Chat 选择器中。', provider: '供应商',
     protocol: '协议', localUsage: '30 天用量', state: '状态', available: '可用', disabled: '已停用', noModels: '无模型', noKey: '无密钥',
     edit: '编辑', remove: '删除', refresh: '刷新配额', refreshPlan: '刷新此 Plan', refreshing: '正在刷新…', lastRefreshed: (when: string) => `${when} 前更新`, refreshSoon: '每 5 分钟自动刷新', autoRefreshOn: '自动刷新已开启', autoRefreshOff: '自动刷新已暂停', modelLibrary: '模型库', modelLibraryDesc: '所有已接入并选择的模型',
-    search: '搜索模型或供应商', noModelMatch: '没有匹配的模型', allProviders: '全部厂商', filterByProvider: '按厂商筛选', usageRecent: '最近 30 天', enableModel: '启用模型', disableModel: '停用模型', usageTitle: '用量与官方配额', usageDesc: '本地 30 天请求统计与供应商配额快照',
+    search: '搜索模型或供应商', noModelMatch: '没有匹配的模型', allProviders: '全部厂商', filterByProvider: '按厂商筛选', usageRecent: '最近 30 天', enableModel: '启用模型', disableModel: '停用模型', enableAllModels: '全部激活', disableAllModels: '全部取消激活', usageTitle: '用量与官方配额', usageDesc: '本地 30 天请求统计与供应商配额快照',
     input: '输入', output: '输出', failures: '失败', quotaPending: '尚未获取官方配额', quotaUnsupported: '该供应商未提供官方配额接口', quotaUnsupportedHint: '已停止自动刷新。', goUsageHint: 'OpenCode 不开放用量查询接口，请在控制台查看实时用量：opencode.ai/auth', modelInvalid: '模型 ID 不可用', modelInvalidHint: 'Function UUID 不能用于 Chat。请改用真实的 NIM 模型名，例如 meta/llama-3.1-70b-instruct。', settingsTitle: '控制台设置', settingsDesc: '调整模型可见性、状态栏和外观',
     onlyAvailable: '仅显示可用模型', onlyAvailableDesc: '只向 Chat 暴露已启用、有模型且已保存 API Key 的 Plan。',
     configTitle: '配置备份', configDesc: '导出或导入所有 Plan、设置、用量记录与配额快照。',
@@ -161,7 +161,7 @@ const copy = {
     noPlans: 'No plans connected', noPlansDesc: 'Connect a provider to expose its models in the VS Code Chat picker.', provider: 'Provider',
     protocol: 'Protocol', localUsage: '30-day usage', state: 'State', available: 'Available', disabled: 'Disabled', noModels: 'No models', noKey: 'No key',
     edit: 'Edit', remove: 'Delete', refresh: 'Refresh quota', refreshPlan: 'Refresh this plan', refreshing: 'Refreshing…', lastRefreshed: (when: string) => `Updated ${when} ago`, refreshSoon: 'Updates every 5 minutes', autoRefreshOn: 'Auto refresh on', autoRefreshOff: 'Auto refresh paused', modelLibrary: 'Model library', modelLibraryDesc: 'Every selected model across connected plans',
-    search: 'Search models or providers', noModelMatch: 'No models match this search', allProviders: 'All providers', filterByProvider: 'Filter by provider', usageRecent: 'Last 30 days', enableModel: 'Enable model', disableModel: 'Disable model', usageTitle: 'Usage & official quota', usageDesc: 'Local 30-day request data and provider quota snapshots',
+    search: 'Search models or providers', noModelMatch: 'No models match this search', allProviders: 'All providers', filterByProvider: 'Filter by provider', usageRecent: 'Last 30 days', enableModel: 'Enable model', disableModel: 'Disable model', enableAllModels: 'Enable all', disableAllModels: 'Disable all', usageTitle: 'Usage & official quota', usageDesc: 'Local 30-day request data and provider quota snapshots',
     input: 'Input', output: 'Output', failures: 'Failures', quotaPending: 'Official quota not fetched', quotaUnsupported: 'Provider has no official quota endpoint', quotaUnsupportedHint: 'Auto refresh is disabled.', goUsageHint: 'OpenCode does not expose a usage API. See live usage in the console: opencode.ai/auth', modelInvalid: 'Invalid model ID', modelInvalidHint: 'Function UUID cannot be used in Chat. Replace it with a real NIM model id like meta/llama-3.1-70b-instruct.', settingsTitle: 'Console settings', settingsDesc: 'Control model visibility, status bar, and appearance',
     onlyAvailable: 'Only show available models', onlyAvailableDesc: 'Only expose enabled plans with models and a stored API key to Chat.',
     configTitle: 'Configuration backup', configDesc: 'Export or import all plans, settings, usage, and quota snapshots.',
@@ -869,24 +869,25 @@ function Models({ state, language, text }: any) {
           {providers.map(provider => <option key={provider} value={provider}>{provider}</option>)}
         </select>
       </label>
+      <div className="model-bulk-actions">
+        <button className="secondary-button" onClick={() => vscode.postMessage({ type: 'toggleAllModels', enabled: true })}><Check size={14} strokeWidth={2} />{text.enableAllModels}</button>
+        <button className="secondary-button" onClick={() => vscode.postMessage({ type: 'toggleAllModels', enabled: false })}><X size={14} strokeWidth={2} />{text.disableAllModels}</button>
+      </div>
     </div>
     <div className="model-grid">{visible.map((model: any) => {
       const invalid = isInvalidModelId(model.plan, model.id);
       const modelEnabled = (model.enabled ?? true) !== false;
-      const displayName = normalizeModelName(model.name) || model.id;
-      const showName = displayName !== model.id;
       const usage = usageByModel.get(`${model.plan.id}:${model.id}`);
       return <article className={`model-card ${invalid ? 'is-invalid' : ''} ${modelEnabled ? '' : 'is-disabled'}`} key={`${model.plan.id}-${model.id}`}>
         <div className="model-card-head">
           <span className="model-chip"><ModelIcon provider={model.plan.provider} baseUrl={model.plan.baseUrl} name={model.name} kind={model.kind} /></span>
+          <span className="model-card-provider" title={`${model.plan.name} / ${model.plan.provider}`}>{model.plan.name}<em> / {model.plan.provider}</em></span>
           <label className="switch model-switch" title={modelEnabled ? text.disableModel : text.enableModel}>
             <input type="checkbox" checked={modelEnabled} onChange={event => vscode.postMessage({ type: 'toggleModel', planId: model.plan.id, modelId: model.id, enabled: event.target.checked })} />
             <span />
           </label>
         </div>
-        {showName ? <strong>{displayName}</strong> : <strong className="model-card-id-only">{model.id}</strong>}
         <code>{model.id}</code>
-        <p>{model.plan.name} / {model.plan.provider}</p>
         {invalid ? <p className="model-invalid-hint">{text.modelInvalidHint}</p> : <div className="feature-list">{modelFeatures(model, language).map(value => <span key={value}>{value}</span>)}</div>}
         <div className="model-meta">
           <span className={`health ${invalid ? 'danger' : (model.plan.enabled ? 'healthy' : 'warning')}`}><i />{invalid ? text.modelInvalid : (model.plan.enabled ? text.available : text.disabled)}</span>

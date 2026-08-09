@@ -280,6 +280,11 @@ export class Dashboard {
           this.sync();
         }
       }
+      if (message.type === 'toggleAllModels') {
+        await this.store.setAllModelsEnabled(message.enabled);
+        this.provider.refresh();
+        this.sync();
+      }
     } catch (error) {
       this.sync();
       const planId = message && typeof message === 'object' && 'id' in message ? (message as { id?: string }).id : undefined;

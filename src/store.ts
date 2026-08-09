@@ -113,6 +113,16 @@ export class PlanStore {
     this.changeEmitter.fire();
   }
 
+  async setAllModelsEnabled(enabled: boolean): Promise<void> {
+    const plans = this.getPlans().map((plan) => ({
+      ...plan,
+      models: plan.models.map((model) => ({ ...model, enabled })),
+      updatedAt: Date.now(),
+    }));
+    await this.context.globalState.update(PLANS_KEY, plans);
+    this.changeEmitter.fire();
+  }
+
   async deletePlan(id: string): Promise<void> {
     await this.context.globalState.update(PLANS_KEY, this.getPlans().filter((plan) => plan.id !== id));
     await this.context.secrets.delete(`${SECRET_PREFIX}${id}`);

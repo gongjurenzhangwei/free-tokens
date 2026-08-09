@@ -194,6 +194,17 @@
           send(buildStateMessage(ctx.state));
           return;
         }
+        if (message.type === 'toggleAllModels') {
+          ctx.state.plans = ctx.state.plans.map(function (p) {
+            return Object.assign({}, p, {
+              models: (p.models || []).map(function (m) { return Object.assign({}, m, { enabled: !!message.enabled }); }),
+              updatedAt: Date.now(),
+            });
+          });
+          saveState(ctx.state);
+          send(buildStateMessage(ctx.state));
+          return;
+        }
         if (message.type === 'delete') {
           ctx.state.plans = ctx.state.plans.filter(function (p) { return p.id !== message.id; });
           delete ctx.state.apiKeys[message.id];

@@ -132,11 +132,11 @@ Base URL 可以是以下任意一种写法，扩展会自动处理：
 
 ## 免费 Token 推荐
 
-「免费 Token 推荐」卡片列表由 `docs/free-tokens.html` 提供，通过 **iframe** 渲染在 Dashboard 中：
+「免费 Token 推荐」卡片列表由 `docs/free-tokens.html` 提供，构建时打包进扩展，并以**内联（`<iframe srcDoc>`）方式**渲染在 Dashboard 中：
 
-- 构建时该 HTML 会被复制到 `dist/free-tokens.html` 并**打包进扩展**，默认从扩展内置页面加载——即使离线或无法访问 GitHub 也能正常显示（`raw.githubusercontent.com` 对 HTML 返回 `text/plain`，iframe 无法渲染为页面，因此不依赖远程源）；
+- 构建时该 HTML 会被复制到 `dist/free-tokens.html` 并**打包进扩展**；扩展运行时读取其内容、内联到 webview 中渲染——完全不依赖网络 / 外部源 / iframe 加载 `vscode-webview://` 资源，即使离线也 100% 正常显示（`raw.githubusercontent.com` 对 HTML 返回 `text/plain` 且带 `nosniff`，iframe 无法渲染为页面，因此不依赖远程源）；
 - 更新渠道列表需修改并推送 `docs/free-tokens.html` 后**重新发布扩展**；
-- 你仍可通过 VS Code 设置 `byokCopilot.freeTokensUrl` 覆盖为**自托管 CDN / 自建站点**的地址，覆盖后内容改由该地址提供。
+- 你仍可通过 VS Code 设置 `byokCopilot.freeTokensUrl` 覆盖为**自托管 CDN / 自建站点**的地址，覆盖后内容改由该地址提供（指向 `raw.githubusercontent.com` 的旧配置会被自动忽略，回退到内置页面）。
 
 ---
 
@@ -179,7 +179,7 @@ npm run watch        # 监听编译
 src/                扩展核心（extension / dashboard / provider / store / api / statusPanel）
 src/webview/        Dashboard 前端（React + Tailwind）
 components/         React 组件（含 Dashboard 主界面）
-docs/               免费 Token 推荐页（远程 HTML，不打包）
+docs/               免费 Token 推荐页（构建时复制到 dist/free-tokens.html 并打包进扩展）
 scripts/            辅助脚本（如 webhook 加密）
 preview/            浏览器预览调试环境
 ```
@@ -243,7 +243,7 @@ The core philosophy is **BYOK (Bring Your Own Key)**: all API keys live only in 
 - **Dashboard**: React + Tailwind UI with five workspaces, dark/light themes, and instant zh/en switching.
 - **Update check** via GitHub Releases.
 - **Submit a free-token channel** (pushed to the developer via an encrypted Feishu webhook).
-- **Free-token recommendations page** rendered via iframe from `docs/free-tokens.html` — not bundled, updatable by pushing to GitHub.
+- **Free-token recommendations page** bundled into the extension and rendered inline via `<iframe srcDoc>` — fully offline, no external-host dependency.
 
 ## Quick Start (development)
 
@@ -271,12 +271,11 @@ Base URLs may be a service root, end with `/v1`, or be a full endpoint (`/models
 
 ## Free-Token Recommendations Page
 
-The card list is served by `docs/free-tokens.html` through an iframe:
+The card list lives in `docs/free-tokens.html` and is bundled into the extension at build time:
 
-- Not bundled into the VSIX (excluded in `.vscodeignore`).
-- Loaded by default from `raw.githubusercontent.com` on the repo's `main` branch.
-- Overridable via the `byokCopilot.freeTokensUrl` setting (self-hosted CDN).
-- To update the list, just edit and push `docs/free-tokens.html` — no extension re-release needed.
+- Copied to `dist/free-tokens.html` and packaged in the VSIX; the extension reads it and inlines the content into the dashboard via an `<iframe srcDoc>`, so it renders reliably offline without depending on external hosts (`raw.githubusercontent.com` returns `text/plain` + `nosniff`, which iframes can't render as a page).
+- Overridable via the `byokCopilot.freeTokensUrl` setting (self-hosted CDN). Values pointing at `raw.githubusercontent.com` are ignored and fall back to the bundled page.
+- To update the list, edit and push `docs/free-tokens.html`, then **re-release the extension**.
 
 ## Update Check
 

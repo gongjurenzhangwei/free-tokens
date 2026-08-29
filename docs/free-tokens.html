@@ -17,6 +17,16 @@
       --sans: "IBM Plex Sans","Segoe UI Variable",sans-serif;
       --mono: "JetBrains Mono","Cascadia Code",monospace;
     }
+    /* Dark theme, applied when the host webview posts { type: 'byokTheme', theme: 'dark' }.
+       The iframe is a separate document and does not inherit the parent's data-theme.
+       Keep in sync with src/webview/styles.css (dark tokens). */
+    html[data-theme="dark"] {
+      --bg: #111318; --surface: #191c23; --surface-soft: #252a34; --surface-strong: #20242d;
+      --text: #f3f4f6; --muted: #949ba8;
+      --line: #2c313b; --line-strong: #3a414d;
+      --cyan: #6d8cff; --green: #48b982; --amber: #d6a34b; --pink: #c8789a;
+      --shadow: 0 8px 24px rgba(0,0,0,.16);
+    }
     html, body { margin: 0; padding: 0; background: transparent; }
     body { color: var(--text); font: 14px/1.55 var(--sans); -webkit-font-smoothing: antialiased; }
     *, *::before, *::after { box-sizing: border-box; }
@@ -44,6 +54,21 @@
     .ft-actions .secondary:hover { border-color: var(--line-strong); background: color-mix(in srgb, var(--cyan) 7%, var(--surface-soft)); text-decoration: none; }
     .ft-url { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 6px 10px; border-radius: 4px; color: var(--muted); background: var(--surface); font: 500 12px var(--mono); }
   </style>
+  <script>
+    // Listen for theme messages from the host webview (see FreeTokensView in
+    // components/ui/dashboard-with-collapsible-sidebar.tsx).
+    (function () {
+      var applyTheme = function (theme) {
+        if (theme === 'dark' || theme === 'light') {
+          document.documentElement.dataset.theme = theme;
+        }
+      };
+      window.addEventListener('message', function (event) {
+        var data = event.data;
+        if (data && typeof data === 'object' && data.type === 'byokTheme') applyTheme(data.theme);
+      });
+    })();
+  </script>
 </head>
 <body>
   <div class="ft-grid">
